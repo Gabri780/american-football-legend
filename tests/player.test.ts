@@ -55,7 +55,7 @@ describe('Player Module', () => {
 
     const sum = ovrs.reduce((a, b) => a + b, 0);
     const avg = sum / ovrs.length;
-    
+
     const sqDiffs = ovrs.map(v => Math.pow(v - avg, 2));
     const stdDev = Math.sqrt(sqDiffs.reduce((a, b) => a + b, 0) / ovrs.length);
 
@@ -75,7 +75,7 @@ describe('Player Module', () => {
     });
 
     const ovr21 = player.overall;
-    
+
     // RB Prime is 24-26
     player.age = 25;
     const ovr25 = computeOverall(player);
@@ -143,7 +143,7 @@ describe('Player Module', () => {
     };
 
     const p1 = createPlayer(config);
-    
+
     // Create new RNG with same seed for second call
     const p2 = createPlayer({
       ...config,
