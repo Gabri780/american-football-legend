@@ -59,7 +59,7 @@ describe('SeededRandom', () => {
     const childSeq = Array.from({ length: 10 }, () => child.random());
 
     expect(parentSeq).not.toEqual(childSeq);
-    
+
     // Test child consistency
     const child2 = new SeededRandom(SEED).derive('child');
     const child2Seq = Array.from({ length: 10 }, () => child2.random());
@@ -69,7 +69,7 @@ describe('SeededRandom', () => {
   it('Test 5: pick() elige solo elementos del array proporcionado', () => {
     const rng = new SeededRandom(SEED);
     const options = ['QB', 'RB', 'WR', 'TE'];
-    
+
     for (let i = 0; i < 100; i++) {
       const selection = rng.pick(options);
       expect(options).toContain(selection);
@@ -82,7 +82,7 @@ describe('SeededRandom', () => {
       { value: 'A', weight: 80 },
       { value: 'B', weight: 20 }
     ];
-    
+
     const iterations = 10000;
     const counts = { A: 0, B: 0 };
 
