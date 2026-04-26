@@ -1,0 +1,21 @@
+{
+  "name": "american-football-legend",
+  "version": "1.0.0",
+  "description": "Simulador narrativo de carrera NFL",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "seedrandom": "^3.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/seedrandom": "^3.0.8",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
+  }
+}
