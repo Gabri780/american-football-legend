@@ -51,7 +51,7 @@ let wrSeason = { receivingYards: 0, receivingTDs: 0, receptions: 0 };
 
 for (let i = 0; i < N_DRIVES; i++) {
   const drive = simulateDrive(80, 75, 'OFF', 'DEF', 25, 1, defaultContext, rng.derive(`d${i}`));
-  
+
   const qbStats = computePlayerDriveStats(drive, qb, 'Balanced', rng.derive(`s-qb-${i}`)) as QBDriveStats;
   qbSeason.passYards += qbStats.passYards;
   qbSeason.passTDs += qbStats.passTDs;
