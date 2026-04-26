@@ -1,6 +1,15 @@
 import { simulateDrive, Drive, GameContext } from './drive';
 import { Player } from './player';
-import { PlayerDriveStats, OffensiveScheme } from './playerDriveStats';
+import { 
+  PlayerDriveStats, 
+  OffensiveScheme, 
+  computePlayerDriveStats, 
+  resolveTDAttribution,
+  TDAttribution,
+  QBDriveStats,
+  RBDriveStats,
+  WRDriveStats
+} from './playerDriveStats';
 import { SeededRandom } from './prng';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,14 +82,13 @@ export interface SimulateGameParams {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Simulates a full game between two teams.
- *
- * NOTE: This is a skeleton (Task 6A).
- * Drive simulation, scoreboard logic, clock management and stat accumulation
- * are implemented in Tasks 6B–6E.
+ * Simulates a full game between two teams using a 4-quarter clock.
  */
 export function simulateGame(params: SimulateGameParams): Game {
   const { homeTeamId, awayTeamId, context, rng } = params;
+  const userPlayer = params.userPlayer;
+  const userTeam = params.userPlayerTeam;
+  const userScheme = params.userPlayerScheme || 'Balanced';
 
   const homeStats: GameTeamStats = {
     teamId: homeTeamId, pointsScored: 0, totalYards: 0, drives: 0, turnovers: 0
@@ -89,28 +97,39 @@ export function simulateGame(params: SimulateGameParams): Game {
     teamId: awayTeamId, pointsScored: 0, totalYards: 0, drives: 0, turnovers: 0
   };
 
-  const drives: Drive[] = [];
-  const totalDrives = rng.randomInt(20, 26);
-  const halfDriveIndex = Math.floor(totalDrives / 2);
+  // Helpers for stats
+  const initEmptyStats = (player: Player): PlayerDriveStats => {
+    if (player.position === 'QB') {
+      return { passAttempts: 0, completions: 0, passYards: 0, passTDs: 0, interceptions: 0, rushAttempts: 0, rushYards: 0, rushTDs: 0, sacks: 0, fumbles: 0 };
+    } else if (player.position === 'RB') {
+      return { carries: 0, rushYards: 0, rushTDs: 0, fumbles: 0, receptions: 0, receivingYards: 0, receivingTDs: 0, targets: 0 };
+    } else {
+      return { targets: 0, receptions: 0, receivingYards: 0, receivingTDs: 0, drops: 0 };
+    }
+  };
 
+  const accumulateStats = (target: any, source: any) => {
+    for (const key in source) {
+      if (typeof source[key] === 'number') {
+        target[key] = (target[key] || 0) + source[key];
+      }
+    }
+  };
+
+  let accumulatedUserStats: PlayerDriveStats | null = userPlayer ? initEmptyStats(userPlayer) : null;
+
+  const drives: Drive[] = [];
+  let currentQuarter: 1 | 2 | 3 | 4 | 5 = 1;
+  let secondsRemainingInQuarter = 900;
   let currentPossession: 'home' | 'away' = 'away'; // Away receives opening kickoff
   let startYard = 25;
 
-  for (let i = 0; i < totalDrives; i++) {
-    // Determine Quarter (simplistic approximation for 6B)
-    let currentQuarter: 1 | 2 | 3 | 4;
-    if (i < totalDrives / 4) currentQuarter = 1;
-    else if (i < totalDrives / 2) currentQuarter = 2;
-    else if (i < (totalDrives * 3) / 4) currentQuarter = 3;
-    else currentQuarter = 4;
+  const PASS_RATIO: Record<OffensiveScheme, number> = {
+    AirRaid: 0.75, Balanced: 0.60, RunHeavy: 0.45
+  };
 
-    // Second half opening kickoff
-    if (i === halfDriveIndex) {
-      currentPossession = 'home';
-      startYard = 25;
-      currentQuarter = 3;
-    }
-
+  while (currentQuarter <= 4) {
+    const q = currentQuarter as 1 | 2 | 3 | 4;
     const isHomeOffense = currentPossession === 'home';
     const offRating = isHomeOffense ? params.homeOffenseRating : params.awayOffenseRating;
     const defRating = isHomeOffense ? params.awayDefenseRating : params.homeDefenseRating;
@@ -123,22 +142,44 @@ export function simulateGame(params: SimulateGameParams): Game {
       offTeamId,
       defTeamId,
       startYard,
-      currentQuarter,
+      q,
       context,
       rng
     );
 
+    // Clock Logic
+    let wasTruncated = false;
+    if (drive.timeConsumed > secondsRemainingInQuarter) {
+      drive.timeConsumed = secondsRemainingInQuarter;
+      wasTruncated = true;
+      drive.pointsScored = 0; // Truncated drives don't score in this simplified model
+      if (q === 2) drive.outcome = 'END_HALF';
+      if (q === 4) drive.outcome = 'END_GAME';
+    }
+    secondsRemainingInQuarter -= drive.timeConsumed;
+
+    // TD Attribution & User Stats
+    let tdAttribution: TDAttribution | undefined = undefined;
+    if (drive.outcome === 'TD') {
+      const ratio = PASS_RATIO[userScheme];
+      tdAttribution = resolveTDAttribution(ratio, userPlayer?.archetype || 'non-mobile', rng);
+    }
+
+    if (userPlayer && userTeam === currentPossession) {
+      const driveStats = computePlayerDriveStats(drive, userPlayer, userScheme, rng, tdAttribution);
+      accumulateStats(accumulatedUserStats!, driveStats);
+    }
+
     drives.push(drive);
 
-    // Update Stats
+    // Update Team Stats
     const offStats = isHomeOffense ? homeStats : awayStats;
     const defStats = isHomeOffense ? awayStats : homeStats;
-
     offStats.drives += 1;
     offStats.totalYards += Math.max(0, drive.totalYards);
 
     if (drive.outcome === 'SAFETY') {
-      defStats.pointsScored += 2; // Defense gets the safety points
+      defStats.pointsScored += 2;
     } else {
       offStats.pointsScored += drive.pointsScored;
     }
@@ -147,29 +188,53 @@ export function simulateGame(params: SimulateGameParams): Game {
       offStats.turnovers += 1;
     }
 
-    // Determine next possession and start yard
-    currentPossession = isHomeOffense ? 'away' : 'home'; // Most outcomes flip possession
-    
-    switch (drive.outcome) {
-      case 'PUNT':
-        startYard = rng.randomInt(15, 30);
-        break;
-      case 'TD':
-      case 'FG':
-      case 'MISSED_FG':
-      case 'SAFETY':
-        startYard = 25;
-        break;
-      case 'TURNOVER_INT':
-      case 'TURNOVER_FUMBLE':
-      case 'DOWNS':
-        startYard = Math.max(1, Math.min(99, 100 - drive.endingYardLine));
-        break;
-      case 'END_HALF':
-      case 'END_GAME':
-        startYard = 25;
-        break;
+    // Possession & Position for NEXT drive
+    if (wasTruncated && (q === 1 || q === 3)) {
+      // Team keeps possession into the next quarter
+      startYard = drive.endingYardLine;
+    } else {
+      // Normal possession flip
+      currentPossession = isHomeOffense ? 'away' : 'home';
+      switch (drive.outcome) {
+        case 'PUNT':
+          startYard = rng.randomInt(15, 30);
+          break;
+        case 'TD':
+        case 'FG':
+        case 'MISSED_FG':
+        case 'SAFETY':
+          startYard = 25;
+          break;
+        case 'TURNOVER_INT':
+        case 'TURNOVER_FUMBLE':
+        case 'DOWNS':
+          startYard = Math.max(1, Math.min(99, 100 - drive.endingYardLine));
+          break;
+        default:
+          startYard = 25;
+          break;
+      }
     }
+
+    // Quarter Transition
+    if (secondsRemainingInQuarter === 0) {
+      if (q === 1) {
+        currentQuarter = 2;
+        secondsRemainingInQuarter = 900;
+      } else if (q === 2) {
+        currentQuarter = 3;
+        secondsRemainingInQuarter = 900;
+        currentPossession = 'home'; // Home receives 2nd half kickoff
+        startYard = 25;
+      } else if (q === 3) {
+        currentQuarter = 4;
+        secondsRemainingInQuarter = 900;
+      } else {
+        currentQuarter = 5; // END
+      }
+    }
+
+    if (drives.length >= 50) break;
   }
 
   const homeScore = homeStats.pointsScored;
@@ -190,7 +255,7 @@ export function simulateGame(params: SimulateGameParams): Game {
     awayStats,
     drives,
     context,
-    userPlayerStats: null,
+    userPlayerStats: accumulatedUserStats,
     summary: '',
     highlightPlay: '',
   };
