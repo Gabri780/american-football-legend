@@ -12,7 +12,7 @@ describe('Player Module', () => {
       position: 'QB',
       firstName: 'Joe',
       lastName: 'Montana',
-      isUserPlayer: true,
+      tier: 'user',
       options: { forceArchetype: 'Pocket Passer' }
     });
 
@@ -32,7 +32,7 @@ describe('Player Module', () => {
         position: rng.pick([...positions]),
         firstName: 'Test',
         lastName: 'User',
-        isUserPlayer: i % 2 === 0
+        tier: i % 3 === 0 ? 'user' : (i % 3 === 1 ? 'star' : 'regular')
       });
       expect(p.overall).toBeGreaterThanOrEqual(40);
       expect(p.overall).toBeLessThanOrEqual(99);
@@ -47,7 +47,7 @@ describe('Player Module', () => {
         position: 'QB',
         firstName: 'Test',
         lastName: 'User',
-        isUserPlayer: false, // Stars/Rest logic
+        tier: 'star',
         options: { forceArchetype: 'Pocket Passer', potentialMin: 85 }
       });
       ovrs.push(p.overall);
@@ -70,7 +70,7 @@ describe('Player Module', () => {
       position: 'RB',
       firstName: 'Saquon',
       lastName: 'Barkley',
-      isUserPlayer: true,
+      tier: 'user',
       options: { ageOverride: 21 }
     });
 
@@ -101,7 +101,7 @@ describe('Player Module', () => {
       position: 'WR',
       firstName: 'Tyreek',
       lastName: 'Hill',
-      isUserPlayer: true
+      tier: 'user'
     });
 
     const p2 = createPlayer({
@@ -109,7 +109,7 @@ describe('Player Module', () => {
       position: 'WR',
       firstName: 'Tyreek',
       lastName: 'Hill',
-      isUserPlayer: true
+      tier: 'user'
     });
 
     expect(p1).toEqual(p2);
@@ -122,12 +122,37 @@ describe('Player Module', () => {
         position: 'QB',
         firstName: 'Tom',
         lastName: 'Brady',
-        isUserPlayer: false,
+        tier: 'star',
         options: { forceArchetype: 'Pocket Passer' }
       });
       const skills = p.positionalSkills as any;
       expect(skills.mobility).toBeGreaterThanOrEqual(40);
       expect(skills.mobility).toBeLessThanOrEqual(65);
     }
+  });
+
+  it('Test 8 — Determinismo robusto con tiers y opciones', () => {
+    const seed = 'robust-seed';
+    const config = {
+      rng: new SeededRandom(seed),
+      position: 'RB' as const,
+      firstName: 'Christian',
+      lastName: 'McCaffrey',
+      tier: 'star' as const,
+      options: { ageOverride: 24, forceArchetype: 'Receiving Back' as const }
+    };
+
+    const p1 = createPlayer(config);
+    
+    // Create new RNG with same seed for second call
+    const p2 = createPlayer({
+      ...config,
+      rng: new SeededRandom(seed)
+    });
+
+    expect(p1).toEqual(p2);
+    expect(p1.tier).toBeUndefined(); // Verification that internal player object doesn't leak 'tier' parameter if not needed
+    expect(p1.potential).toBeGreaterThanOrEqual(80);
+    expect(p1.potential).toBeLessThanOrEqual(99);
   });
 });

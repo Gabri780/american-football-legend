@@ -117,15 +117,32 @@ export function computeOverall(player: Player): number {
   return Math.max(40, Math.min(99, finalOvr));
 }
 
+/**
+ * Options for generating a new player.
+ */
 export interface CreatePlayerOptions {
+  /** PRNG instance for deterministic generation */
   rng: SeededRandom;
+  /** Player position (QB, RB, WR) */
   position: Position;
+  /** Player first name */
   firstName: string;
+  /** Player last name */
   lastName: string;
-  isUserPlayer: boolean;
+  /** 
+   * Generation tier:
+   * - 'user': The player controlled by the user. High potential range [75, 90].
+   * - 'star': League elite NPC. Maximum potential range [80, 99].
+   * - 'regular': Standard league NPC. Potential range [50, 80].
+   */
+  tier: 'user' | 'star' | 'regular';
+  /** Optional overrides for specific generation needs */
   options?: {
+    /** Minimum potential (only for 'user' tier) */
     potentialMin?: number;
+    /** Override default rookie age (21-23) */
     ageOverride?: number;
+    /** Force a specific archetype (useful for testing or specific NPC generation) */
     forceArchetype?: Archetype;
   };
 }
@@ -134,13 +151,13 @@ export interface CreatePlayerOptions {
  * Procedurally generates a player using a SeededRandom instance.
  */
 export function createPlayer(params: CreatePlayerOptions): Player {
-  const { rng, position, firstName, lastName, isUserPlayer, options = {} } = params;
+  const { rng, position, firstName, lastName, tier, options = {} } = params;
 
   // 1. Determine Archetype
   let archetype: Archetype;
   if (options.forceArchetype) {
     archetype = options.forceArchetype;
-  } else if (isUserPlayer) {
+  } else if (tier === 'user') {
     // User gets uniform random choice between the 4 position archetypes
     const choices = Object.keys(ARCHETYPES).filter(k => {
       if (position === 'QB') return k.includes('Passer') || k.includes('Gunslinger') || k.includes('Mobile') || k.includes('Manager');
@@ -150,7 +167,7 @@ export function createPlayer(params: CreatePlayerOptions): Player {
     }) as Archetype[];
     archetype = rng.pick(choices);
   } else {
-    // NPCs (Stars/Rest) use weighted distribution
+    // NPCs (Stars/Regular) use weighted distribution
     archetype = rng.weightedRandom(STAR_ARCHETYPE_DISTRIBUTION[position]);
   }
 
@@ -164,9 +181,9 @@ export function createPlayer(params: CreatePlayerOptions): Player {
 
   // 3. Potential
   let potential: number;
-  if (isUserPlayer) {
+  if (tier === 'user') {
     potential = rng.randomInt(options.potentialMin || 75, 90);
-  } else if (rng.random() < 0.1) { // 10% chance of being a "Star" generation
+  } else if (tier === 'star') {
     potential = rng.randomInt(80, 99);
   } else {
     potential = rng.randomInt(50, 80);
@@ -206,7 +223,7 @@ export function createPlayer(params: CreatePlayerOptions): Player {
     workEthic: genAttr('workEthic'),
 
     potential,
-    scoutingLevel: isUserPlayer ? 100 : 0,
+    scoutingLevel: tier === 'user' ? 100 : 0,
     freshness: 100,
     morale: 80,
     injuries: [],
