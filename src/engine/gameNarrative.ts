@@ -128,9 +128,21 @@ function generateHighlight(game: Game): string {
 
   // Priority: TD > FG > Turnover
   // Within TD: Max yardage, then last quarter
-  const drives = [...game.drives];
   
-  const scoreDrives = drives.filter(d => d.outcome === 'TD');
+  let pool = [...game.drives];
+
+  // Fix Pulido-B: Prefer drives from the winning team
+  if (game.winnerTeamId) {
+    const winnerDrives = pool.filter(d => d.teamOnOffenseId === game.winnerTeamId);
+    const hasImpact = winnerDrives.some(d => 
+      ['TD', 'FG', 'TURNOVER_INT', 'TURNOVER_FUMBLE'].includes(d.outcome)
+    );
+    if (hasImpact) {
+      pool = winnerDrives;
+    }
+  }
+
+  const scoreDrives = pool.filter(d => d.outcome === 'TD');
   let highlightDrive: Drive | null = null;
 
   if (scoreDrives.length > 0) {
@@ -141,12 +153,12 @@ function generateHighlight(game: Game): string {
     });
     highlightDrive = scoreDrives[0];
   } else {
-    const fgDrives = drives.filter(d => d.outcome === 'FG');
+    const fgDrives = pool.filter(d => d.outcome === 'FG');
     if (fgDrives.length > 0) {
       fgDrives.sort((a, b) => b.quarter - a.quarter);
       highlightDrive = fgDrives[0];
     } else {
-      const turnovers = drives.filter(d => ['TURNOVER_INT', 'TURNOVER_FUMBLE'].includes(d.outcome));
+      const turnovers = pool.filter(d => ['TURNOVER_INT', 'TURNOVER_FUMBLE'].includes(d.outcome));
       if (turnovers.length > 0) {
         turnovers.sort((a, b) => b.quarter - a.quarter);
         highlightDrive = turnovers[0];
@@ -155,7 +167,7 @@ function generateHighlight(game: Game): string {
   }
 
   if (!highlightDrive) {
-    highlightDrive = drives[0]; // Fallback
+    highlightDrive = pool[0]; // Fallback
   }
 
   const qStr = highlightDrive.quarter === 'OT' ? "overtime" : `quarter ${highlightDrive.quarter}`;
