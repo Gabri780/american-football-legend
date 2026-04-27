@@ -31,4 +31,8 @@ export interface Team {
   
   // Rivalidades históricas
   historicalRivalIds: string[];
+  
+  // Ratings (0-99) - Representan el nivel base del equipo (sin contar al jugador usuario)
+  offenseRating: number;
+  defenseRating: number;
 }

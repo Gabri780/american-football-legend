@@ -12,6 +12,7 @@ import {
 } from './playerDriveStats';
 import { SeededRandom } from './prng';
 import { generateGameNarrative } from './gameNarrative';
+import { Team } from './team';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -272,4 +273,33 @@ export function simulateGame(params: SimulateGameParams): Game {
   gameResult.highlightPlay = narrative.highlightPlay;
 
   return gameResult;
+}
+
+/**
+ * Higher-level wrapper for simulateGame that accepts Team objects.
+ */
+export function simulateGameFromTeams(params: {
+  homeTeam: Team;
+  awayTeam: Team;
+  context: GameContext;
+  userPlayer?: Player;
+  userPlayerTeam?: 'home' | 'away';
+  userPlayerScheme?: OffensiveScheme;
+  rng: SeededRandom;
+}): Game {
+  const { homeTeam, awayTeam, context, userPlayer, userPlayerTeam, userPlayerScheme, rng } = params;
+
+  return simulateGame({
+    homeTeamId: homeTeam.id,
+    awayTeamId: awayTeam.id,
+    homeOffenseRating: homeTeam.offenseRating,
+    homeDefenseRating: homeTeam.defenseRating,
+    awayOffenseRating: awayTeam.offenseRating,
+    awayDefenseRating: awayTeam.defenseRating,
+    context,
+    userPlayer,
+    userPlayerTeam,
+    userPlayerScheme,
+    rng
+  });
 }

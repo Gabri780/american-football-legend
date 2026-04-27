@@ -1,4 +1,5 @@
 import { Team, Conference, Division } from '../engine/team';
+import { SeededRandom } from '../engine/prng';
 import teamsData from './teams.json';
 
 /**
@@ -63,12 +64,24 @@ export function loadTeams(testData?: Team[]): Team[] {
     }
   }
 
-  // 6. Valid Rival IDs
+  // 6. Valid Rival IDs and Assign Ratings
   for (const team of teams) {
     for (const rivalId of team.historicalRivalIds) {
       if (!ids.has(rivalId)) {
         throw new Error(`Invalid rival ID '${rivalId}' for team ${team.id}: rival does not exist`);
       }
+    }
+
+    // Assign ratings if they don't exist (deterministic based on team.id)
+    if (team.offenseRating === undefined || team.defenseRating === undefined) {
+      const rng = new SeededRandom(`ratings-${team.id}`);
+      // Rango 60-90 centrado en 75 (curva normal aproximada)
+      team.offenseRating = Math.round(rng.randomNormal(75, 7));
+      team.defenseRating = Math.round(rng.randomNormal(75, 7));
+      
+      // Clamp
+      team.offenseRating = Math.max(60, Math.min(90, team.offenseRating));
+      team.defenseRating = Math.max(60, Math.min(90, team.defenseRating));
     }
   }
 
