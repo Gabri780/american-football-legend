@@ -84,12 +84,14 @@ export interface Player {
   chemistry: Record<string, number>;
 
   // Career
+  tier: PlayerTier;
   draftYear: number;
   draftRound: number;
   draftPick: number;
   collegeId: string;
   contract?: Contract;
   careerStats: SeasonStats[];
+  yearInLeague: number; // Useful for progression
 }
 
 /**
@@ -213,6 +215,7 @@ export function createPlayer(params: CreatePlayerOptions): Player {
     firstName,
     lastName,
     position,
+    tier,
     archetype,
     jerseyNumber: rng.randomInt(1, 99),
     age,
@@ -244,6 +247,7 @@ export function createPlayer(params: CreatePlayerOptions): Player {
     draftYear: 2024,
     draftRound: 0,
     draftPick: 0,
+    yearInLeague: 1,
     collegeId: generateCollegeId(rng, tier)
   };
 

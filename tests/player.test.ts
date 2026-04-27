@@ -151,7 +151,7 @@ describe('Player Module', () => {
     });
 
     expect(p1).toEqual(p2);
-    expect(p1.tier).toBeUndefined(); // Verification that internal player object doesn't leak 'tier' parameter if not needed
+    expect(p1.tier).toBe('star'); // Updated for Task 7: tier is now stored in the Player object
     expect(p1.potential).toBeGreaterThanOrEqual(80);
     expect(p1.potential).toBeLessThanOrEqual(99);
   });
