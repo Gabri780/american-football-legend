@@ -369,3 +369,125 @@ describe('simulateGame — clock and quarters (Task 6D)', () => {
   });
 });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST 21-26 — Final Narrative (Task 6E)
+// ─────────────────────────────────────────────────────────────────────────────
+describe('simulateGame — narrative (Task 6E)', () => {
+  test('Test 21: generateGameNarrative returns non-empty summary and highlightPlay', () => {
+    const game = simulateGame(makeParams('narrative-test'));
+    expect(game.summary).not.toBe('');
+    expect(game.highlightPlay).not.toBe('');
+    expect(typeof game.summary).toBe('string');
+    expect(typeof game.highlightPlay).toBe('string');
+  });
+
+  test('Test 22: Summary reflects score difference', () => {
+    // Blowout
+    const blowout = simulateGame(makeParams('blowout-seed', {
+      homeOffenseRating: 99, homeDefenseRating: 99,
+      awayOffenseRating: 40, awayDefenseRating: 40
+    }));
+    // We expect a large diff here. 31-10 is ~21 diff.
+    // The templates for blowout include "domination", "mismatch", "lopsided", "masterclass", "asserted its will".
+    const blowoutKeywords = ["mismatch", "domination", "over by halftime", "masterclass", "will"];
+    const hasBlowoutWord = blowoutKeywords.some(w => blowout.summary.toLowerCase().includes(w));
+    expect(hasBlowoutWord).toBe(true);
+
+    // Tie
+    let tieGame: Game | null = null;
+    for(let i=0; i<100; i++) {
+        const g = simulateGame(makeParams(`tie-find-${i}`, {
+            homeOffenseRating: 50, homeDefenseRating: 99,
+            awayOffenseRating: 50, awayDefenseRating: 99
+        }));
+        if (g.homeScore === g.awayScore) {
+            tieGame = g;
+            break;
+        }
+    }
+    if (tieGame) {
+        const tieKeywords = ["draw", "stalemate", "shared", "deadlock", "struggle"];
+        const hasTieWord = tieKeywords.some(w => tieGame!.summary.toLowerCase().includes(w));
+        expect(hasTieWord).toBe(true);
+    }
+  });
+
+  test('Test 23: Highlight reflects a real drive', () => {
+    const game = simulateGame(makeParams('highlight-drive-check'));
+    const hasTD = game.drives.some(d => d.outcome === 'TD');
+    if (hasTD) {
+      expect(game.highlightPlay.toLowerCase()).toContain('touchdown');
+    }
+    // Check that it doesn't say "the team scored" but uses the team ID
+    expect(game.highlightPlay).not.toContain('the team scored');
+    expect(game.highlightPlay).toMatch(new RegExp(`${game.homeTeamId}|${game.awayTeamId}`));
+  });
+
+  test('Test 24: Summary mentions high-performing user player', () => {
+    const rng = new SeededRandom('user-perf-seed');
+    const qb = createPlayer({ rng, position: 'QB', firstName: 'Johnny', lastName: 'Hero', tier: 'user' });
+    
+    // Force a high-scoring game for the user
+    const game = simulateGame(makeParams('hero-game', {
+      userPlayer: qb,
+      userPlayerTeam: 'home',
+      homeOffenseRating: 99,
+      awayDefenseRating: 40
+    }));
+
+    // Si el QB tuvo buenas stats, el summary DEBE mencionarlo
+    const stats = game.userPlayerStats as any;
+    if (stats.passYards > 300 || stats.passTDs >= 3) {
+      expect(game.summary).toContain('Johnny');
+      expect(game.summary).toContain('Hero');
+    } else if (stats.passTDs === 0 && stats.interceptions >= 2) {
+      expect(game.summary).toContain('Johnny');
+      expect(game.summary).toContain('struggled');
+    }
+    
+    // PERO siempre que haya userPlayer, la lógica de mention DEBE ejecutarse
+    // sin error. Verifica que summary no es undefined o vacío:
+    expect(game.summary.length).toBeGreaterThan(0);
+  });
+
+  test('Test 25: Determinism: same seed -> same narrative', () => {
+    const game1 = simulateGame(makeParams('narrative-det'));
+    const game2 = simulateGame(makeParams('narrative-det'));
+    expect(game1.summary).toBe(game2.summary);
+    expect(game1.highlightPlay).toBe(game2.highlightPlay);
+  });
+
+  test('Test 26: Templates in ENGLISH (no Spanish characters)', () => {
+    const spanishChars = ['ñ', 'á', 'é', 'í', 'ó', 'ú', '¡', '¿'];
+    const englishWords = ["the", "a", "and", "of", "in", "to", "for"];
+
+    for (let i = 0; i < 100; i++) {
+      const game = simulateGame(makeParams(`lang-test-${i}`));
+      
+      const combined = (game.summary + " " + game.highlightPlay).toLowerCase();
+      
+      // Check for Spanish characters
+      spanishChars.forEach(char => {
+        expect(combined).not.toContain(char);
+      });
+
+      // Check for common English words
+      const hasEnglishWord = englishWords.some(word => {
+        // Use word boundaries to avoid false positives (e.g., "the" in "breathe")
+        return new RegExp(`\\b${word}\\b`).test(combined);
+      });
+      expect(hasEnglishWord).toBe(true);
+
+      // Check individual drives too
+      game.drives.forEach(drive => {
+        const driveText = (drive.description + " " + drive.highlight).toLowerCase();
+        spanishChars.forEach(char => {
+          expect(driveText).not.toContain(char);
+        });
+        const hasEnglishDrive = englishWords.some(word => new RegExp(`\\b${word}\\b`).test(driveText));
+        expect(hasEnglishDrive).toBe(true);
+      });
+    }
+  });
+});

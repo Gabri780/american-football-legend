@@ -38,7 +38,7 @@ function makeDriveWithOutcome(
     outcome,
     pointsScored: outcome === 'TD' ? 7 : outcome === 'FG' ? 3 : 0,
     endingYardLine: Math.min(99, startYard + totalYards),
-    description: 'Drive de 6 jugadas, 40 yardas en 3:00.',
+    description: 'Drive of 6 plays, 40 yards in 3:00.',
     highlight: 'Test highlight.'
   };
 }

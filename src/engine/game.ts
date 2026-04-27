@@ -11,6 +11,7 @@ import {
   WRDriveStats
 } from './playerDriveStats';
 import { SeededRandom } from './prng';
+import { generateGameNarrative } from './gameNarrative';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -57,6 +58,9 @@ export interface Game {
   // Narrative (filled in 6E, empty string for now)
   summary: string;
   highlightPlay: string;
+
+  // For narrative generation (Task 6E)
+  userPlayer?: Player;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,7 +248,7 @@ export function simulateGame(params: SimulateGameParams): Game {
   if (homeScore > awayScore) winnerTeamId = homeTeamId;
   else if (awayScore > homeScore) winnerTeamId = awayTeamId;
 
-  return {
+  const gameResult: Game = {
     id: `game_${rng.randomInt(10000, 99999)}`,
     homeTeamId,
     awayTeamId,
@@ -258,5 +262,12 @@ export function simulateGame(params: SimulateGameParams): Game {
     userPlayerStats: accumulatedUserStats,
     summary: '',
     highlightPlay: '',
+    userPlayer,
   };
+
+  const narrative = generateGameNarrative(gameResult);
+  gameResult.summary = narrative.summary;
+  gameResult.highlightPlay = narrative.highlightPlay;
+
+  return gameResult;
 }

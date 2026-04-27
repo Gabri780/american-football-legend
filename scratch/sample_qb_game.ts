@@ -34,8 +34,8 @@ console.log(`Drives totales: ${game.drives.length}`);
 const qDist = { 1: 0, 2: 0, 3: 0, 4: 0 };
 let totalTime = 0;
 game.drives.forEach(d => {
-    qDist[d.quarter as 1|2|3|4]++;
-    totalTime += d.timeConsumed;
+  qDist[d.quarter as 1 | 2 | 3 | 4]++;
+  totalTime += d.timeConsumed;
 });
 
 console.log(`Distribución por Quarter: Q1:${qDist[1]}, Q2:${qDist[2]}, Q3:${qDist[3]}, Q4:${qDist[4]}`);
@@ -44,7 +44,7 @@ console.log(`--------------------------`);
 console.log(`USER PLAYER STATS (Tyler Boone, QB):`);
 const stats = game.userPlayerStats as QBDriveStats;
 console.log(`Pass Attempts: ${stats.passAttempts}`);
-console.log(`Completions: ${stats.completions} (${((stats.completions/stats.passAttempts)*100).toFixed(1)}%)`);
+console.log(`Completions: ${stats.completions} (${((stats.completions / stats.passAttempts) * 100).toFixed(1)}%)`);
 console.log(`Pass Yards: ${stats.passYards}`);
 console.log(`Pass TDs: ${stats.passTDs}`);
 console.log(`Interceptions: ${stats.interceptions}`);
