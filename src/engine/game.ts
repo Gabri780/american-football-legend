@@ -131,6 +131,9 @@ export function simulateGame(params: SimulateGameParams): Game {
   const PASS_RATIO: Record<OffensiveScheme, number> = {
     AirRaid: 0.75, Balanced: 0.60, RunHeavy: 0.45
   };
+  
+  const gameId = `game_${rng.derive('gameId').randomInt(10000, 99999)}`;
+  let driveCounter = 1;
 
   while (currentQuarter <= 4) {
     const q = currentQuarter as 1 | 2 | 3 | 4;
@@ -148,7 +151,9 @@ export function simulateGame(params: SimulateGameParams): Game {
       startYard,
       q,
       context,
-      rng
+      rng,
+      gameId,
+      driveCounter++
     );
 
     // Clock Logic
@@ -182,11 +187,8 @@ export function simulateGame(params: SimulateGameParams): Game {
     offStats.drives += 1;
     offStats.totalYards += Math.max(0, drive.totalYards);
 
-    if (drive.outcome === 'SAFETY') {
-      defStats.pointsScored += 2;
-    } else {
-      offStats.pointsScored += drive.pointsScored;
-    }
+    offStats.pointsScored += drive.pointsScored;
+    defStats.pointsScored += drive.defensivePointsScored;
 
     if (['TURNOVER_INT', 'TURNOVER_FUMBLE', 'DOWNS'].includes(drive.outcome)) {
       offStats.turnovers += 1;
@@ -249,7 +251,7 @@ export function simulateGame(params: SimulateGameParams): Game {
   else if (awayScore > homeScore) winnerTeamId = awayTeamId;
 
   const gameResult: Game = {
-    id: `game_${rng.randomInt(10000, 99999)}`,
+    id: gameId,
     homeTeamId,
     awayTeamId,
     homeScore,

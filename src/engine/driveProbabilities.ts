@@ -19,7 +19,8 @@ export const BASE_PROBABILITIES: Record<DriveOutcome, number> = {
  */
 export function computeOutcomeProbabilities(
   matchupDelta: number,
-  startYard: number
+  startYard: number,
+  quarter: number
 ): WeightedItem<DriveOutcome>[] {
   const probs = { ...BASE_PROBABILITIES };
 
@@ -28,7 +29,15 @@ export function computeOutcomeProbabilities(
     probs['SAFETY'] = 0;
   }
 
-  // 2. Modulate by Matchup Delta
+  // 2. Handle Quarter special cases (Fix 3)
+  if (quarter !== 2) {
+    probs['END_HALF'] = 0;
+  }
+  if (quarter !== 4) {
+    probs['END_GAME'] = 0;
+  }
+
+  // 3. Modulate by Matchup Delta
   // P_TD_ajustada = P_TD_base × (1 + matchupDelta × 0.015)
   // P_TURNOVER_ajustada = P_TURNOVER_base × (1 - matchupDelta × 0.012)
   probs['TD'] *= (1 + matchupDelta * 0.015);
@@ -42,7 +51,7 @@ export function computeOutcomeProbabilities(
 
   let items = normalize(probs);
 
-  // 3. Modulate by Yard Line
+  // 4. Modulate by Yard Line
   const yardMults = getYardMultipliers(startYard);
   
   items.forEach(item => {

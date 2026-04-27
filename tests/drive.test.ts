@@ -115,7 +115,8 @@ describe('Drive Simulation', () => {
           break;
         case 'SAFETY':
           expect(drive.totalYards).toBeLessThan(0);
-          expect(drive.pointsScored).toBe(2);
+          expect(drive.pointsScored).toBe(0);
+          expect(drive.defensivePointsScored).toBe(2);
           break;
       }
       
@@ -128,5 +129,57 @@ describe('Drive Simulation', () => {
     const drive = simulateDrive(75, 75, 'A', 'B', 25, 1, defaultContext, rng);
     expect(drive.description.length).toBeGreaterThan(0);
     expect(drive.highlight.length).toBeGreaterThan(0);
+  });
+
+  it('Test Pulido-1 — SAFETY produce pointsScored=0 y defensivePointsScored=2 en el drive', () => {
+    const seed = 'safety-test-seed';
+    // We force a safety by using a seed that we know produces it, or just iterating until we get one
+    let safetyFound = false;
+    for (let i = 0; i < 1000; i++) {
+      // Start at yard 1 to maximize safety probability
+      const drive = simulateDrive(50, 99, 'A', 'B', 1, 1, defaultContext, rng.derive(`safety-search-${i}`));
+      if (drive.outcome === 'SAFETY') {
+        expect(drive.pointsScored).toBe(0);
+        expect(drive.defensivePointsScored).toBe(2);
+        safetyFound = true;
+        break;
+      }
+    }
+    expect(safetyFound).toBe(true);
+
+    // Verify other outcomes have defensivePointsScored=0
+    const driveTD = simulateDrive(99, 50, 'A', 'B', 80, 1, defaultContext, rng.derive('force-td'));
+    if (driveTD.outcome !== 'SAFETY') {
+      expect(driveTD.defensivePointsScored).toBe(0);
+    }
+  });
+
+  it('Test Pulido-3 — Outcomes END_HALF/GAME solo en quarters correctos', () => {
+    const n = 1000;
+
+    // Q1: No END_HALF, no END_GAME
+    for (let i = 0; i < n; i++) {
+      const drive = simulateDrive(75, 75, 'A', 'B', 25, 1, defaultContext, rng.derive(`q1-outcomes-${i}`));
+      expect(drive.outcome).not.toBe('END_HALF');
+      expect(drive.outcome).not.toBe('END_GAME');
+    }
+
+    // Q2: END_HALF puede aparecer, no END_GAME
+    let endHalfFound = false;
+    for (let i = 0; i < n; i++) {
+      const drive = simulateDrive(75, 75, 'A', 'B', 25, 2, defaultContext, rng.derive(`q2-outcomes-${i}`));
+      expect(drive.outcome).not.toBe('END_GAME');
+      if (drive.outcome === 'END_HALF') endHalfFound = true;
+    }
+    expect(endHalfFound).toBe(true);
+
+    // Q4: END_GAME puede aparecer, no END_HALF
+    let endGameFound = false;
+    for (let i = 0; i < n; i++) {
+      const drive = simulateDrive(75, 75, 'A', 'B', 25, 4, defaultContext, rng.derive(`q4-outcomes-${i}`));
+      expect(drive.outcome).not.toBe('END_HALF');
+      if (drive.outcome === 'END_GAME') endGameFound = true;
+    }
+    expect(endGameFound).toBe(true);
   });
 });

@@ -27,6 +27,7 @@ export interface Drive {
   
   outcome: DriveOutcome;
   pointsScored: number;
+  defensivePointsScored: number; // puntos que la defensa marca en este drive
   endingYardLine: number;       // 1-99 donde acabó
   
   description: string;          // 1-2 frases resumen
@@ -41,13 +42,15 @@ export function simulateDrive(
   startYard: number,
   quarter: 1 | 2 | 3 | 4,
   context: GameContext,
-  rng: SeededRandom
+  rng: SeededRandom,
+  gameId?: string,
+  driveNumber?: number
 ): Drive {
   // 1. Matchup Delta
   const matchupDelta = offenseRating - defenseRating;
 
   // 2-4. Probabilities & Modulation
-  const probabilities = computeOutcomeProbabilities(matchupDelta, startYard);
+  const probabilities = computeOutcomeProbabilities(matchupDelta, startYard, quarter);
 
   // 5. Pick Outcome
   const outcome = rng.weightedRandom(probabilities);
@@ -57,6 +60,7 @@ export function simulateDrive(
   let totalYards = 0;
   let timeConsumed = 0;
   let pointsScored = 0;
+  let defensivePointsScored = 0;
 
   switch (outcome) {
     case 'TD':
@@ -100,7 +104,8 @@ export function simulateDrive(
       plays = rng.randomInt(1, 3);
       totalYards = rng.randomInt(-10, -2);
       timeConsumed = rng.randomInt(10, 60);
-      pointsScored = 2; // Realistically the points go to the defense, but for now we track drive impact
+      pointsScored = 0; // La ofensa NO marca puntos en safety
+      defensivePointsScored = 2; // Puntos para el equipo defensor
       break;
     case 'END_HALF':
     case 'END_GAME':
@@ -121,9 +126,12 @@ export function simulateDrive(
   }
 
   const endingYardLine = startYard + totalYards;
+  const legacyId = rng.randomInt(1000, 9999).toString();
 
   const drive: Drive = {
-    id: rng.randomInt(1000, 9999).toString(),
+    id: (gameId !== undefined && driveNumber !== undefined) 
+      ? `${gameId}-${driveNumber}` 
+      : legacyId,
     teamOnOffenseId: offenseTeamId,
     teamOnDefenseId: defenseTeamId,
     startingYardLine: startYard,
@@ -133,6 +141,7 @@ export function simulateDrive(
     timeConsumed,
     outcome,
     pointsScored,
+    defensivePointsScored,
     endingYardLine,
     description: '',
     highlight: ''

@@ -167,7 +167,7 @@ function generateHighlight(game: Game): string {
       `The decisive moment came on ${team}'s ${yards}-yard touchdown drive in ${qStr}.`,
       `${team} ignited the crowd with a major touchdown drive during the ${qStr}.`,
       `A clinical touchdown march by ${team} in ${qStr} shifted the momentum.`,
-      `The highlights were headlined by ${team}'s scoring drive in ${qStr}.`,
+      `The highlights were headlined by ${team}'s touchdown scoring drive in ${qStr}.`,
       `${team} broke the game open with a massive touchdown in ${qStr}.`
     ],
     'FG': [
