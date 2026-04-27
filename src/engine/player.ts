@@ -2,6 +2,9 @@ import { SeededRandom } from './prng';
 import { Position, Archetype, Injury, SeasonStats, Contract } from './types';
 import { ARCHETYPES, DEFAULT_ATTRIBUTE_RANGE, STAR_ARCHETYPE_DISTRIBUTION } from './archetypes';
 import { getAgeFactor } from './aging';
+import { generatePlayerName, generateCollegeId } from './nameGenerator';
+
+export type PlayerTier = 'user' | 'star' | 'regular';
 
 export interface QBSkills {
   armStrength: number;
@@ -125,17 +128,17 @@ export interface CreatePlayerOptions {
   rng: SeededRandom;
   /** Player position (QB, RB, WR) */
   position: Position;
-  /** Player first name */
-  firstName: string;
-  /** Player last name */
-  lastName: string;
+  /** Player first name (optional, generated if missing) */
+  firstName?: string;
+  /** Player last name (optional, generated if missing) */
+  lastName?: string;
   /** 
    * Generation tier:
    * - 'user': The player controlled by the user. High potential range [75, 90].
    * - 'star': League elite NPC. Maximum potential range [80, 99].
    * - 'regular': Standard league NPC. Potential range [50, 80].
    */
-  tier: 'user' | 'star' | 'regular';
+  tier: PlayerTier;
   /** Optional overrides for specific generation needs */
   options?: {
     /** Minimum potential (only for 'user' tier) */
@@ -151,7 +154,16 @@ export interface CreatePlayerOptions {
  * Procedurally generates a player using a SeededRandom instance.
  */
 export function createPlayer(params: CreatePlayerOptions): Player {
-  const { rng, position, firstName, lastName, tier, options = {} } = params;
+  const { rng, position, tier, options = {} } = params;
+
+  // 0. Name Generation (if not provided)
+  let firstName = params.firstName;
+  let lastName = params.lastName;
+  if (!firstName || !lastName) {
+    const generated = generatePlayerName(rng);
+    if (!firstName) firstName = generated.firstName;
+    if (!lastName) lastName = generated.lastName;
+  }
 
   // 1. Determine Archetype
   let archetype: Archetype;
@@ -232,7 +244,7 @@ export function createPlayer(params: CreatePlayerOptions): Player {
     draftYear: 2024,
     draftRound: 0,
     draftPick: 0,
-    collegeId: 'GENERIC_U'
+    collegeId: generateCollegeId(rng, tier)
   };
 
   // 5. Positional Skills
