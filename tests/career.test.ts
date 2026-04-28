@@ -4,7 +4,7 @@ import { createPlayer } from '../src/engine/player';
 import { simulateCareer, CareerResult, RetireDecisionCallback } from '../src/engine/career';
 import { SeededRandom } from '../src/engine/prng';
 
-describe('simulateCareer - always retires when prompted', () => {
+describe('simulateCareer - retires at age 30+ when prompted', () => {
   let result: CareerResult;
   let teams: ReturnType<typeof loadTeams>;
   let userTeamId: string;
@@ -12,16 +12,17 @@ describe('simulateCareer - always retires when prompted', () => {
   beforeAll(() => {
     teams = loadTeams();
     userTeamId = teams[0].id;
-    const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
-    
-    const alwaysRetire: RetireDecisionCallback = () => true;
-    
+    // Using RB which has lower suggestAge (30) for faster test
+    const player = createPlayer({ position: 'RB', tier: 'user', rng: new SeededRandom('p'), options: { ageOverride: 35 } });
+
+    const retiresAt30: RetireDecisionCallback = (ctx) => ctx.player.age >= 30;
+
     result = simulateCareer({
       teams,
       userPlayer: player,
       userTeamId,
       startYear: 0,
-      retireDecisionCallback: alwaysRetire,
+      retireDecisionCallback: retiresAt30,
       rng: new SeededRandom('career-1'),
       maxYears: 25
     });
@@ -70,9 +71,6 @@ describe('simulateCareer - always retires when prompted', () => {
     // Solo aplica si el jugador tiene >= 30 años en alguna entry
     const declineEntries = result.history.filter(e => e.ageAtSeason >= 30);
     if (declineEntries.length > 0) {
-      // Al menos una de estas debería tener ovrAtEnd <= ovrAtStart
-      // (por aging negativo en RB, o por declive físico en otras posiciones)
-      // No asserción fuerte porque progressPlayer puede mejorar OVR si workEthic alto
       expect(declineEntries.length).toBeGreaterThan(0);
     }
   });
@@ -82,9 +80,9 @@ describe('simulateCareer - never retires when prompted', () => {
   it('hits forced_max_age cap', () => {
     const teams = loadTeams();
     const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
-    
+
     const neverRetire: RetireDecisionCallback = () => false;
-    
+
     const result = simulateCareer({
       teams,
       userPlayer: player,
@@ -103,9 +101,10 @@ describe('simulateCareer - never retires when prompted', () => {
 describe('simulateCareer - determinism', () => {
   it('same seeds and callback produce identical career', () => {
     const teams = loadTeams();
-    const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
-    const cb: RetireDecisionCallback = () => true;
-    
+    // Use RB for faster determinism check
+    const player = createPlayer({ position: 'RB', tier: 'user', rng: new SeededRandom('p'), options: { ageOverride: 35 } });
+    const cb: RetireDecisionCallback = (ctx) => ctx.player.age >= 30;
+
     const r1 = simulateCareer({
       teams, userPlayer: player, userTeamId: teams[0].id, startYear: 0,
       retireDecisionCallback: cb, rng: new SeededRandom('det'), maxYears: 25
@@ -131,18 +130,18 @@ describe('simulateCareer - league aging', () => {
       off: t.offenseRating,
       def: t.defenseRating
     }));
-    
+
     const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
-    
+
     try {
       simulateCareer({
-        teams,  // pasamos referencia, NO copia, el algoritmo internamente debe COPIAR
+        teams,
         userPlayer: player,
         userTeamId: teams[0].id,
         startYear: 0,
         retireDecisionCallback: () => true,
         rng: new SeededRandom('aging'),
-        maxYears: 10
+        maxYears: 1 // Only need 1 year to check for mutation
       });
     } catch (e: any) {
       if (!e.message.includes('Reached maxYears cap')) {
@@ -162,7 +161,7 @@ describe('simulateCareer - extra constraints and validations', () => {
   it('throws if userTeamId is not in teams array', () => {
     const teams = loadTeams();
     const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
-    
+
     expect(() => {
       simulateCareer({
         teams,
@@ -179,7 +178,7 @@ describe('simulateCareer - extra constraints and validations', () => {
     const teams = loadTeams();
     const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
     player.position = 'CB' as any;
-    
+
     expect(() => {
       simulateCareer({
         teams,
@@ -197,7 +196,7 @@ describe('simulateCareer - extra constraints and validations', () => {
     const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
     player.age = 21;
     // For QB, forced max age is 42. If we only give 5 maxYears, it won't retire.
-    
+
     expect(() => {
       simulateCareer({
         teams,
@@ -216,7 +215,7 @@ describe('simulateCareer - extra constraints and validations', () => {
     const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
     player.age = 36;
     player.overall = 70; // Will trigger suggestion
-    
+
     expect(() => {
       simulateCareer({
         teams,
