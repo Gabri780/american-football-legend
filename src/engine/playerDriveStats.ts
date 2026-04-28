@@ -142,15 +142,18 @@ function computeQBStats(drive: Drive, player: Player, scheme: OffensiveScheme, r
   // Fumbles — QB gets the fumble 50% of the time on TURNOVER_FUMBLE
   const fumbles = drive.outcome === 'TURNOVER_FUMBLE' && rng.random() < 0.50 ? 1 : 0;
 
-  // Rush attempts
+  // Rush attempts — calibrated to NFL real-world rates
+  // Healthcheck v2.0 showed previous formula produced ~102 carries/season for 
+  // non-mobile QBs (NFL real: 30-50) and up to 227 for mobile (record: 176).
+  // New formula targets ~46 carries/season non-mobile and ~122 mobile.
   const isMobile = player.archetype === 'Mobile QB';
   let rushAttempts: number;
   if (isMobile) {
-    // Mobile QBs run more based on drive length
-    const driveLength = Math.max(0, drive.plays);
-    rushAttempts = rng.randomInt(0, Math.min(4, Math.floor(driveLength / 3)));
+    // Mobile QBs scramble in 40% of drives, 1-2 carries when they do
+    rushAttempts = rng.random() < 0.40 ? rng.randomInt(1, 2) : 0;
   } else {
-    rushAttempts = rng.randomInt(0, 1);
+    // Non-mobile QBs scramble rarely (15% of drives), 1-2 carries
+    rushAttempts = rng.random() < 0.15 ? rng.randomInt(1, 2) : 0;
   }
 
   // Rush yards: mobility * 0.05 * carries + small random per carry
