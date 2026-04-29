@@ -22,6 +22,7 @@ describe('simulateCareer - retires at age 30+ when prompted', () => {
       userPlayer: player,
       userTeamId,
       startYear: 0,
+      faCallback: (offers) => offers[0],
       retireDecisionCallback: retiresAt30,
       rng: new SeededRandom('career-1'),
       maxYears: 25
@@ -88,6 +89,7 @@ describe('simulateCareer - never retires when prompted', () => {
       userPlayer: player,
       userTeamId: teams[0].id,
       startYear: 0,
+      faCallback: (offers) => offers[0],
       retireDecisionCallback: neverRetire,
       rng: new SeededRandom('career-never'),
       maxYears: 30  // generous cap to allow reaching forced retirement
@@ -107,10 +109,12 @@ describe('simulateCareer - determinism', () => {
 
     const r1 = simulateCareer({
       teams, userPlayer: player, userTeamId: teams[0].id, startYear: 0,
+      faCallback: (offers) => offers[0],
       retireDecisionCallback: cb, rng: new SeededRandom('det'), maxYears: 25
     });
     const r2 = simulateCareer({
       teams, userPlayer: player, userTeamId: teams[0].id, startYear: 0,
+      faCallback: (offers) => offers[0],
       retireDecisionCallback: cb, rng: new SeededRandom('det'), maxYears: 25
     });
 
@@ -139,6 +143,7 @@ describe('simulateCareer - league aging', () => {
         userPlayer: player,
         userTeamId: teams[0].id,
         startYear: 0,
+        faCallback: (offers) => offers[0],
         retireDecisionCallback: () => true,
         rng: new SeededRandom('aging'),
         maxYears: 1 // Only need 1 year to check for mutation
@@ -168,6 +173,7 @@ describe('simulateCareer - extra constraints and validations', () => {
         userPlayer: player,
         userTeamId: 'NON_EXISTENT_ID',
         startYear: 0,
+        faCallback: (offers) => offers[0],
         retireDecisionCallback: () => true,
         rng: new SeededRandom('x')
       });
@@ -185,6 +191,7 @@ describe('simulateCareer - extra constraints and validations', () => {
         userPlayer: player,
         userTeamId: teams[0].id,
         startYear: 0,
+        faCallback: (offers) => offers[0],
         retireDecisionCallback: () => true,
         rng: new SeededRandom('x')
       });
@@ -203,6 +210,7 @@ describe('simulateCareer - extra constraints and validations', () => {
         userPlayer: player,
         userTeamId: teams[0].id,
         startYear: 0,
+        faCallback: (offers) => offers[0],
         retireDecisionCallback: () => false,
         rng: new SeededRandom('x'),
         maxYears: 5
@@ -222,6 +230,7 @@ describe('simulateCareer - extra constraints and validations', () => {
         userPlayer: player,
         userTeamId: teams[0].id,
         startYear: 0,
+        faCallback: (offers) => offers[0],
         retireDecisionCallback: () => { throw new Error('Callback Error!'); },
         rng: new SeededRandom('x'),
         maxYears: 25

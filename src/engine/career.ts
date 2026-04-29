@@ -9,7 +9,8 @@ import { progressPlayer } from './progression';
 export type RetirementReason = 
   | 'age_threshold'
   | 'forced_max_age'
-  | 'callback_chose';
+  | 'callback_chose'
+  | 'no_market';
 
 export interface RetireDecisionContext {
   player: Player;
@@ -35,6 +36,8 @@ export interface SeasonHistoryEntry {
   leagueRunnerUpTeamId: string;
 }
 
+import { Contract, ContractsHistory, FreeAgencyDecisionCallback, generateRookieContract, processOffseasonContracts } from './contracts';
+
 export interface CareerResult {
   playerAtStart: Player;
   playerAtEnd: Player;
@@ -48,6 +51,7 @@ export interface CareerResult {
   careerPlayoffStats: PlayerSeasonStats;
   championshipsWon: number;
   superBowlAppearances: number;
+  contractsHistory: ContractsHistory;
 }
 
 function accumulateStats(target: PlayerSeasonStats, source: PlayerSeasonStats): void {
@@ -116,10 +120,11 @@ export function simulateCareer(params: {
   userTeamId: string;
   startYear: number;
   retireDecisionCallback: RetireDecisionCallback;
+  faCallback: FreeAgencyDecisionCallback;
   rng: SeededRandom;
   maxYears?: number;
 }): CareerResult {
-  const { teams, userPlayer, userTeamId, startYear, retireDecisionCallback, rng, maxYears = 25 } = params;
+  const { teams, userPlayer, userTeamId, startYear, retireDecisionCallback, faCallback, rng, maxYears = 25 } = params;
 
   if (!teams.find(t => t.id === userTeamId)) {
     throw new Error(`userTeamId ${userTeamId} not found in teams array.`);
@@ -154,6 +159,20 @@ export function simulateCareer(params: {
   let currentYear = startYear;
   let yearsPlayed = 0;
   let retirementReason: RetirementReason | null = null;
+  let currentTeamId = userTeamId;
+
+  const contractsHistory: ContractsHistory = { events: [], totalEarnings: 0 };
+  let currentContract = generateRookieContract(currentPlayer, currentTeamId, startYear, rng.derive('rookie-contract'));
+  contractsHistory.events.push({
+    year: startYear,
+    type: 'rookie_signed',
+    newTeamId: currentTeamId,
+    contractValue: currentContract.salaryPerYear * currentContract.yearsTotal,
+    yearsTotal: currentContract.yearsTotal,
+    guaranteedTotal: currentContract.guaranteedTotal
+  });
+
+  const recentStatsHistory: PlayerSeasonStats[] = [];
 
   while (yearsPlayed < maxYears && retirementReason === null) {
     // 1. Capturar snapshot ANTES de simular
@@ -170,7 +189,7 @@ export function simulateCareer(params: {
       teams: currentTeams, 
       schedule, 
       userPlayer: currentPlayer, 
-      userTeamId, 
+      userTeamId: currentTeamId, 
       rng: seasonRng 
     });
 
@@ -180,13 +199,14 @@ export function simulateCareer(params: {
       seasonResult, 
       teams: currentTeams, 
       userPlayer: currentPlayer, 
-      userTeamId, 
+      userTeamId: currentTeamId, 
       rng: playoffsRng 
     });
 
     // 5. Acumular stats de carrera y contadores
     accumulateStats(careerRegularStats, seasonResult.playerSeasonStats);
     accumulateStats(careerPlayoffStats, playoffsResult.playerPlayoffStats);
+    recentStatsHistory.push(seasonResult.playerSeasonStats);
     
     if (playoffsResult.userPlayoffExitRound === 'champion') {
       championshipsWon++;
@@ -212,9 +232,9 @@ export function simulateCareer(params: {
     }
 
     // 10. Construir SeasonHistoryEntry
-    const teamStandings = seasonResult.finalStandings.find(s => s.teamId === userTeamId);
+    const teamStandings = seasonResult.finalStandings.find(s => s.teamId === currentTeamId);
     if (!teamStandings) {
-      throw new Error(`User team standings not found for ${userTeamId}`);
+      throw new Error(`User team standings not found for ${currentTeamId}`);
     }
 
     const entry: SeasonHistoryEntry = {
@@ -222,7 +242,7 @@ export function simulateCareer(params: {
       ageAtSeason,
       ovrAtStart,
       ovrAtEnd,
-      teamId: userTeamId,
+      teamId: currentTeamId,
       regularSeasonRecord: { 
         wins: teamStandings.wins, 
         losses: teamStandings.losses, 
@@ -238,10 +258,40 @@ export function simulateCareer(params: {
     };
     history.push(entry);
 
-    // 11. decideRetirement
-    retirementReason = decideRetirement(currentPlayer, yearsPlayed + 1, peakOverall, retireDecisionCallback);
+    // 11. Process Offseason Contracts (SIEMPRE cobra salario, maneja cuts/extensiones/FA)
+    const recentTeamRecords = new Map<string, number>();
+    for (const st of seasonResult.finalStandings) {
+      recentTeamRecords.set(st.teamId, st.wins);
+    }
 
-    // 12. Increment years
+    const offseasonResult = processOffseasonContracts({
+      player: currentPlayer,
+      currentContract,
+      currentYear,
+      yearsPlayed,
+      recentStats: recentStatsHistory.slice(-2),
+      recentTeamRecords,
+      teams: currentTeams,
+      faCallback,
+      rng: rng.derive(`contracts-y${currentYear}`)
+    });
+
+    contractsHistory.events.push(...offseasonResult.contractEvents);
+    contractsHistory.totalEarnings += offseasonResult.earningsThisYear;
+
+    if (offseasonResult.retired) {
+      retirementReason = 'no_market';
+    } else {
+      currentContract = offseasonResult.newContract!;
+      currentTeamId = currentContract.teamId;
+    }
+
+    // 12. decideRetirement (solo si no se retiró por FA)
+    if (retirementReason === null) {
+      retirementReason = decideRetirement(currentPlayer, yearsPlayed + 1, peakOverall, retireDecisionCallback);
+    }
+
+    // 13. Increment years
     yearsPlayed++;
     currentYear++;
   }
@@ -271,6 +321,7 @@ export function simulateCareer(params: {
     careerRegularStats,
     careerPlayoffStats,
     championshipsWon,
-    superBowlAppearances
+    superBowlAppearances,
+    contractsHistory
   };
 }
