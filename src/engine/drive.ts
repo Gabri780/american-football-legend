@@ -11,7 +11,6 @@ export interface GameContext {
   isPlayoff: boolean;
   isRivalryGame: boolean;
   isPrimetime: boolean;
-  isHomeGame: boolean;
 }
 
 export interface Drive {

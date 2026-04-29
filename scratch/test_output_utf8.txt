@@ -1,0 +1,196 @@
+﻿
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/Gabrii/Desktop/AmericanFootballLegend[39m
+
+ [32mÔ£ô[39m tests/team.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+[90mstdout[2m | tests/progression.test.ts[2m > [22m[2mAnnual Progression System (Task 7)[2m > [22m[2mTest 9 ÔÇö Simulated full career trajectory[22m[39m
+Career Trajectory: 70 -> 77 -> 78 -> 84 -> 85 -> 85 -> 90 -> 90 -> 90 -> 90 -> 90 -> 90 -> 86 -> 85 -> 85 -> 81
+
+ [32mÔ£ô[39m tests/progression.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 15[2mms[22m[39m
+ [32mÔ£ô[39m tests/nameGenerator.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 53[2mms[22m[39m
+[90mstdout[2m | simulateCareer (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\career_sim.test.ts:20:11)[22m[39m
+
+=== SIMULATED CAREER: Johnny Career (QB, user) ===
+
+=== SIMULATED CAREER: Johnny Career (RB, star) ===
+
+=== SIMULATED CAREER: Johnny Career (WR, regular) ===
+
+[90mstdout[2m | simulateCareer (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\career_sim.test.ts:21:11)[22m[39m
+Initial OVR: 72 | Potential: 92 | Work Ethic: 85
+Initial OVR: 78 | Potential: 95 | Work Ethic: 85
+Initial OVR: 79 | Potential: 78 | Work Ethic: 85
+
+[90mstdout[2m | simulateCareer (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\career_sim.test.ts:22:11)[22m[39m
+------------------------------------------------------------------
+------------------------------------------------------------------
+------------------------------------------------------------------
+
+[90mstdout[2m | simulateCareer (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\career_sim.test.ts:35:15)[22m[39m
+[YEAR 1] Age: 22 | OVR: 75
+[YEAR 2] Age: 23 | OVR: 76
+[YEAR 3] Age: 24 | OVR: 81
+[YEAR 4] Age: 25 | OVR: 81
+[YEAR 5] Age: 26 | OVR: 82
+[YEAR 6] Age: 27 | OVR: 87
+[YEAR 7] Age: 28 | OVR: 87
+[YEAR 8] Age: 29 | OVR: 88
+[YEAR 9] Age: 30 | OVR: 88
+[YEAR 10] Age: 31 | OVR: 88
+[YEAR 11] Age: 32 | OVR: 88
+[YEAR 12] Age: 33 | OVR: 83
+[YEAR 13] Age: 34 | OVR: 83
+[YEAR 14] Age: 35 | OVR: 83
+[YEAR 15] Age: 36 | OVR: 79
+[YEAR 16] Age: 37 | OVR: 78
+[YEAR 17] Age: 38 | OVR: 78
+[YEAR 18] Age: 39 | OVR: 78 (Consider retirement)
+[YEAR 19] Age: 40 | OVR: 77 (Consider retirement)
+[YEAR 20] Age: 41 | OVR: 77 (Consider retirement)
+[YEAR 1] Age: 22 | OVR: 80
+[YEAR 2] Age: 23 | OVR: 82
+[YEAR 3] Age: 24 | OVR: 91
+[YEAR 4] Age: 25 | OVR: 91
+[YEAR 5] Age: 26 | OVR: 92
+[YEAR 6] Age: 27 | OVR: 88
+[YEAR 7] Age: 28 | OVR: 88
+[YEAR 8] Age: 29 | OVR: 88
+[YEAR 9] Age: 30 | OVR: 81
+[YEAR 10] Age: 31 | OVR: 81
+[YEAR 11] Age: 32 | OVR: 81
+[YEAR 12] Age: 33 | OVR: 75
+[YEAR 13] Age: 34 | OVR: 74
+[YEAR 14] Age: 35 | OVR: 74
+[YEAR 15] Age: 36 | OVR: 74
+[YEAR 16] Age: 37 | OVR: 74
+[YEAR 17] Age: 38 | OVR: 74
+[YEAR 1] Age: 22 | OVR: 79
+[YEAR 2] Age: 23 | OVR: 79
+[YEAR 3] Age: 24 | OVR: 83
+[YEAR 4] Age: 25 | OVR: 83
+[YEAR 5] Age: 26 | OVR: 83
+[YEAR 6] Age: 27 | OVR: 87
+[YEAR 7] Age: 28 | OVR: 87
+[YEAR 8] Age: 29 | OVR: 87
+[YEAR 9] Age: 30 | OVR: 87
+[YEAR 10] Age: 31 | OVR: 87
+[YEAR 11] Age: 32 | OVR: 87
+[YEAR 12] Age: 33 | OVR: 78
+[YEAR 13] Age: 34 | OVR: 78
+[YEAR 14] Age: 35 | OVR: 78
+[YEAR 15] Age: 36 | OVR: 74
+[YEAR 16] Age: 37 | OVR: 73
+[YEAR 17] Age: 38 | OVR: 73
+
+[90mstdout[2m | simulateCareer (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\career_sim.test.ts:31:15)[22m[39m
+[YEAR 18] Age: 39 | OVR: 73 | RETIRED!
+[YEAR 18] Age: 39 | OVR: 73 | RETIRED!
+
+[90mstdout[2m | simulateCareer (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\career_sim.test.ts:39:11)[22m[39m
+------------------------------------------------------------------
+------------------------------------------------------------------
+------------------------------------------------------------------
+
+ [33mÔØ»[39m scratch/career_sim.test.ts [2m ([22m[2m0 test[22m[2m)[22m
+[90mstdout[2m | tests/playerDriveStats.test.ts[2m > [22m[2mPlayer Drive Stats (Task 5B)[2m > [22m[2mLOG ÔÇö Muestra stats acumuladas reales de 1 temporada[22m[39m
+--- STATS REALES (187 DRIVES) ---
+QB Elite (Balanced): { yds: [33m3122[39m, td: [33m17[39m, int: [33m13[39m }
+RB Elite (RunHeavy): { yds: [33m2152[39m, td: [33m15[39m, recTd: [33m2[39m, carries: [33m487[39m } Total TDs: [33m17[39m
+WR Elite (Balanced): { yds: [33m960[39m, td: [33m14[39m, rec: [33m157[39m }
+
+ [32mÔ£ô[39m tests/playerDriveStats.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 70[2mms[22m[39m
+[90mstdout[2m | scratch\verify_pulido.test.ts:21:9[22m[39m
+--- GAME VERIFICATION ---
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:22:9[22m[39m
+Game ID: game_70719
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:23:9[22m[39m
+Score: Cavalry 17 - Blizzard 7
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:25:9[22m[39m
+
+--- DRIVE IDs ---
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:27:11[22m[39m
+Drive ID: game_70719-1 | Team: Blizzard | Q: 1
+Drive ID: game_70719-2 | Team: Cavalry | Q: 1
+Drive ID: game_70719-3 | Team: Blizzard | Q: 1
+Drive ID: game_70719-4 | Team: Cavalry | Q: 1
+Drive ID: game_70719-5 | Team: Blizzard | Q: 1
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:30:9[22m[39m
+
+--- SAFETY CHECK ---
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:45:13[22m[39m
+Safety found in game: game_13225
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:46:13[22m[39m
+Drive Outcome: SAFETY
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:47:13[22m[39m
+Points Scored (Offense): 0
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:48:13[22m[39m
+Defensive Points Scored: 2
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:49:13[22m[39m
+Team on Offense: H
+
+[90mstdout[2m | scratch\verify_pulido.test.ts:54:13[22m[39m
+Defensive Team Score: 15 (should include 2 from safety if first score)
+
+ [33mÔØ»[39m scratch/verify_pulido.test.ts [2m ([22m[2m0 test[22m[2m)[22m
+ [32mÔ£ô[39m tests/player.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 123[2mms[22m[39m
+ [32mÔ£ô[39m tests/prng.test.ts [2m ([22m[2m6 tests[22m[2m)[22m[33m 335[2mms[22m[39m
+ [32mÔ£ô[39m tests/drive.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[33m 417[2mms[22m[39m
+[90mstdout[2m | runSample (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\verify_pulido_b.test.ts:19:11)[22m[39m
+
+=== SAMPLE: BLOWOUT_TEST ===
+
+=== SAMPLE: CLOSED_TEST ===
+
+[90mstdout[2m | runSample (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\verify_pulido_b.test.ts:20:11)[22m[39m
+Score: HOMETOWN_HEROES 35 - AWAY_VILLAINS 3
+Score: HOMETOWN_HEROES 3 - AWAY_VILLAINS 25
+
+[90mstdout[2m | runSample (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\verify_pulido_b.test.ts:21:11)[22m[39m
+Winner: HOMETOWN_HEROES
+Winner: AWAY_VILLAINS
+
+[90mstdout[2m | runSample (C:\Users\Gabrii\Desktop\AmericanFootballLegend\scratch\verify_pulido_b.test.ts:22:11)[22m[39m
+Highlight: HOMETOWN_HEROES ignited the crowd with a major touchdown drive during the quarter 1.
+Highlight: A clinical touchdown march by AWAY_VILLAINS in quarter 2 shifted the momentum.
+
+ [33mÔØ»[39m scratch/verify_pulido_b.test.ts [2m ([22m[2m0 test[22m[2m)[22m
+ [32mÔ£ô[39m tests/game.test.ts [2m ([22m[2m30 tests[22m[2m)[22m[33m 520[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[33m 34760[2mms[22m[39m
+
+node.exe : [31mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1m[7m Failed Suites 3 [27m[22mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[39m
+En línea: 1 Carácter: 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([31mÔÄ»ÔÄ»ÔÄ»Ô...»ÔÄ»ÔÄ»ÔÄ»[39m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+[31m[1m[7m FAIL [27m[22m[39m scratch/career_sim.test.ts [2m[ scratch/career_sim.test.ts ][22m
+[31m[1mError[22m: No test suite found in file 
+C:/Users/Gabrii/Desktop/AmericanFootballLegend/scratch/career_sim.test.ts[39m
+[31m[2mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1/3]ÔÄ»[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m scratch/verify_pulido.test.ts [2m[ scratch/verify_pulido.test.ts ][22m
+[31m[1mError[22m: No test suite found in file 
+C:/Users/Gabrii/Desktop/AmericanFootballLegend/scratch/verify_pulido.test.ts[39m
+[31m[2mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[2/3]ÔÄ»[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m scratch/verify_pulido_b.test.ts [2m[ scratch/verify_pulido_b.test.ts ][22m
+[31m[1mError[22m: No test suite found in file 
+C:/Users/Gabrii/Desktop/AmericanFootballLegend/scratch/verify_pulido_b.test.ts[39m
+[31m[2mÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[3/3]ÔÄ»[22m[39m
+
+[2m Test Files [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m9 passed[39m[22m[90m (12)[39m
+[2m      Tests [22m [1m[32m112 passed[39m[22m[90m (112)[39m
+[2m   Start at [22m 23:41:55
+[2m   Duration [22m 35.42s[2m (transform 803ms, setup 2ms, collect 2.23s, tests 36.30s, environment 5ms, prepare 2.73s)[22m
+

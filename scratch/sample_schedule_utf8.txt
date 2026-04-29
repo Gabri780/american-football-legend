@@ -1,0 +1,418 @@
+﻿=== SEMANA 1 ===
+BOS @ WAS (intra_conference)
+PHI @ IND (divisional)
+BUF @ NYS (intra_conference)
+DEN @ KCC (divisional)
+SLC @ MIA (seventeenth)
+SFO @ PHO (same_place_intra)
+NYE @ DET (inter_conference)
+CHI @ MIN (divisional)
+GRB @ CHA (seventeenth)
+HOU @ SEA (intra_conference)
+BAL @ SDM (inter_conference)
+CLE @ LAA (inter_conference)
+ATL @ NAS (inter_conference)
+NOV @ DAL (divisional)
+CIN @ TAM (intra_conference)
+PIT @ JAX (intra_conference)
+Byes: None
+Total partidos: 16
+
+=== SEMANA 2 ===
+WAS @ DEN (inter_conference)
+IND @ BUF (divisional)
+KCC @ PHI (inter_conference)
+PHO @ SLC (divisional)
+MIN @ MIA (inter_conference)
+DET @ NYS (inter_conference)
+NYE @ BOS (divisional)
+GRB @ CHI (divisional)
+PIT @ SEA (inter_conference)
+SFO @ SDM (divisional)
+LAA @ NOV (intra_conference)
+DAL @ NAS (divisional)
+HOU @ CHA (inter_conference)
+CLE @ TAM (intra_conference)
+BAL @ CIN (divisional)
+ATL @ JAX (divisional)
+Byes: None
+Total partidos: 16
+
+=== SEMANA 3 ===
+BUF @ WAS (divisional)
+PHO @ IND (inter_conference)
+SLC @ PHI (inter_conference)
+KCC @ DEN (divisional)
+MIA @ CHI (inter_conference)
+BOS @ NYS (divisional)
+CIN @ NYE (same_place_intra)
+MIN @ GRB (divisional)
+DET @ SEA (same_place_intra)
+SFO @ LAA (divisional)
+SDM @ DAL (intra_conference)
+NOV @ HOU (divisional)
+NAS @ CLE (seventeenth)
+PIT @ BAL (divisional)
+TAM @ ATL (divisional)
+CHA @ JAX (divisional)
+Byes: None
+Total partidos: 16
+
+=== SEMANA 4 ===
+WAS @ SEA (seventeenth)
+BUF @ IND (divisional)
+PHI @ MIA (intra_conference)
+PHO @ KCC (divisional)
+SLC @ DEN (divisional)
+BOS @ NYS (divisional)
+CHI @ NYE (inter_conference)
+DET @ MIN (divisional)
+GRB @ SFO (same_place_intra)
+SDM @ CIN (inter_conference)
+BAL @ LAA (inter_conference)
+NAS @ NOV (divisional)
+DAL @ HOU (divisional)
+PIT @ CLE (divisional)
+ATL @ CHA (divisional)
+JAX @ TAM (divisional)
+Byes: None
+Total partidos: 16
+
+=== SEMANA 5 ===
+PIT @ WAS (same_place_intra)
+IND @ SLC (inter_conference)
+BUF @ BOS (intra_conference)
+LAA @ KCC (same_place_intra)
+PHO @ CHI (intra_conference)
+MIA @ GRB (inter_conference)
+NYS @ NYE (divisional)
+DET @ ATL (seventeenth)
+SDM @ SEA (divisional)
+SFO @ CLE (inter_conference)
+HOU @ NAS (divisional)
+NOV @ CHA (inter_conference)
+BAL @ DAL (seventeenth)
+CIN @ JAX (intra_conference)
+Byes: PHI, TAM, MIN, DEN
+Total partidos: 14
+
+=== SEMANA 6 ===
+NYS @ WAS (intra_conference)
+PHI @ BUF (divisional)
+SLC @ PHO (divisional)
+DEN @ GRB (intra_conference)
+MIA @ NYE (divisional)
+BOS @ CHI (inter_conference)
+DET @ MIN (divisional)
+SEA @ LAA (divisional)
+SDM @ HOU (intra_conference)
+NOV @ NAS (divisional)
+DAL @ TAM (inter_conference)
+CLE @ PIT (divisional)
+BAL @ ATL (intra_conference)
+JAX @ CHA (divisional)
+Byes: IND, CIN, KCC, SFO
+Total partidos: 14
+
+=== SEMANA 7 ===
+WAS @ IND (divisional)
+PHI @ BUF (divisional)
+KCC @ SLC (divisional)
+DEN @ BOS (seventeenth)
+MIN @ PHO (intra_conference)
+NYE @ MIA (divisional)
+BAL @ NYS (same_place_intra)
+GRB @ DET (divisional)
+SEA @ NAS (intra_conference)
+NOV @ SFO (intra_conference)
+DAL @ HOU (divisional)
+ATL @ CIN (intra_conference)
+CHA @ CLE (intra_conference)
+TAM @ JAX (divisional)
+Byes: PIT, CHI, LAA, SDM
+Total partidos: 14
+
+=== SEMANA 8 ===
+WAS @ BUF (divisional)
+MIA @ IND (intra_conference)
+NYE @ PHI (intra_conference)
+NYS @ KCC (seventeenth)
+SLC @ GRB (intra_conference)
+DEN @ PHO (divisional)
+CHI @ DET (divisional)
+SDM @ MIN (same_place_intra)
+DAL @ SEA (intra_conference)
+SFO @ NAS (intra_conference)
+LAA @ CIN (inter_conference)
+TAM @ PIT (intra_conference)
+JAX @ BAL (intra_conference)
+CHA @ ATL (divisional)
+Byes: BOS, CLE, HOU, NOV
+Total partidos: 14
+
+=== SEMANA 9 ===
+IND @ PHI (divisional)
+BUF @ PHO (inter_conference)
+KCC @ SLC (divisional)
+CHI @ DEN (intra_conference)
+DET @ MIA (inter_conference)
+NYS @ TAM (same_place_intra)
+BOS @ JAX (same_place_intra)
+MIN @ NAS (same_place_intra)
+SEA @ CLE (inter_conference)
+BAL @ SFO (inter_conference)
+LAA @ SDM (divisional)
+NOV @ DAL (divisional)
+HOU @ PIT (seventeenth)
+CHA @ CIN (intra_conference)
+Byes: NYE, WAS, ATL, GRB
+Total partidos: 14
+
+=== SEMANA 10 ===
+WAS @ MIA (intra_conference)
+NYS @ IND (intra_conference)
+PHI @ BOS (intra_conference)
+KCC @ BUF (inter_conference)
+DEN @ PHO (divisional)
+GRB @ NYE (inter_conference)
+CHI @ MIN (divisional)
+SEA @ LAA (divisional)
+SDM @ SFO (divisional)
+HOU @ NOV (divisional)
+DAL @ ATL (inter_conference)
+CLE @ CIN (divisional)
+PIT @ BAL (divisional)
+TAM @ CHA (divisional)
+Byes: JAX, DET, SLC, NAS
+Total partidos: 14
+
+=== SEMANA 11 ===
+SLC @ WAS (inter_conference)
+IND @ CHA (same_place_intra)
+PHI @ NYS (intra_conference)
+NYE @ BUF (intra_conference)
+KCC @ MIN (intra_conference)
+SDM @ DEN (same_place_intra)
+GRB @ PHO (intra_conference)
+MIA @ BOS (divisional)
+CHI @ DET (divisional)
+SFO @ PIT (inter_conference)
+LAA @ HOU (intra_conference)
+NAS @ DAL (divisional)
+CIN @ NOV (seventeenth)
+CLE @ JAX (intra_conference)
+TAM @ ATL (divisional)
+Byes: BAL, SEA
+Total partidos: 15
+
+=== SEMANA 12 ===
+PHO @ WAS (inter_conference)
+IND @ KCC (inter_conference)
+DEN @ PHI (inter_conference)
+MIA @ BUF (intra_conference)
+SLC @ DET (intra_conference)
+BOS @ GRB (inter_conference)
+MIN @ NYE (inter_conference)
+TAM @ CHI (seventeenth)
+SFO @ SEA (divisional)
+NOV @ SDM (intra_conference)
+LAA @ PIT (inter_conference)
+NAS @ CHA (inter_conference)
+JAX @ HOU (inter_conference)
+ATL @ CLE (intra_conference)
+CIN @ BAL (divisional)
+Byes: NYS, DAL
+Total partidos: 15
+
+=== SEMANA 13 ===
+NYE @ WAS (intra_conference)
+IND @ BOS (intra_conference)
+JAX @ PHI (same_place_intra)
+BUF @ LAA (seventeenth)
+KCC @ DAL (same_place_intra)
+SLC @ CHI (intra_conference)
+DET @ DEN (intra_conference)
+MIA @ ATL (same_place_intra)
+NYS @ MIN (inter_conference)
+NOV @ GRB (same_place_intra)
+SEA @ CIN (inter_conference)
+SFO @ HOU (intra_conference)
+PIT @ SDM (inter_conference)
+NAS @ TAM (inter_conference)
+BAL @ CLE (divisional)
+Byes: CHA, PHO
+Total partidos: 15
+
+=== SEMANA 14 ===
+WAS @ PHI (divisional)
+IND @ NYE (intra_conference)
+PHO @ KCC (divisional)
+DEN @ SLC (divisional)
+NYS @ CHI (inter_conference)
+BOS @ DET (inter_conference)
+GRB @ MIN (divisional)
+SEA @ SDM (divisional)
+LAA @ SFO (divisional)
+NAS @ HOU (divisional)
+TAM @ NOV (inter_conference)
+JAX @ DAL (inter_conference)
+CLE @ CIN (divisional)
+ATL @ PIT (intra_conference)
+CHA @ BAL (intra_conference)
+Byes: MIA, BUF
+Total partidos: 15
+
+=== SEMANA 15 ===
+WAS @ PHI (divisional)
+IND @ DEN (inter_conference)
+BUF @ SLC (inter_conference)
+CHI @ KCC (intra_conference)
+NYE @ PHO (seventeenth)
+NYS @ MIA (divisional)
+MIN @ BOS (inter_conference)
+DET @ GRB (divisional)
+SEA @ SFO (divisional)
+SDM @ CLE (inter_conference)
+NAS @ LAA (intra_conference)
+JAX @ NOV (inter_conference)
+CHA @ DAL (inter_conference)
+HOU @ ATL (inter_conference)
+CIN @ PIT (divisional)
+TAM @ BAL (intra_conference)
+Byes: None
+Total partidos: 16
+
+=== SEMANA 16 ===
+ATL @ WAS (same_place_intra)
+IND @ SFO (seventeenth)
+CLE @ PHI (same_place_intra)
+BUF @ BAL (same_place_intra)
+KCC @ GRB (intra_conference)
+SLC @ SEA (same_place_intra)
+DEN @ MIN (intra_conference)
+PHO @ NOV (same_place_intra)
+MIA @ NYS (divisional)
+BOS @ NYE (divisional)
+DAL @ CHI (same_place_intra)
+HOU @ DET (same_place_intra)
+LAA @ SDM (divisional)
+JAX @ NAS (inter_conference)
+CIN @ PIT (divisional)
+CHA @ TAM (divisional)
+Byes: None
+Total partidos: 16
+
+=== SEMANA 17 ===
+WAS @ IND (divisional)
+PHI @ PHO (inter_conference)
+BUF @ DEN (inter_conference)
+DET @ KCC (intra_conference)
+MIN @ SLC (intra_conference)
+BOS @ MIA (divisional)
+NYE @ NYS (divisional)
+GRB @ CHI (divisional)
+SEA @ NOV (intra_conference)
+CIN @ SFO (inter_conference)
+SDM @ NAS (intra_conference)
+DAL @ LAA (intra_conference)
+HOU @ TAM (inter_conference)
+CLE @ BAL (divisional)
+CHA @ PIT (intra_conference)
+JAX @ ATL (divisional)
+Byes: None
+Total partidos: 16
+
+=== SEMANA 18 ===
+KCC @ WAS (inter_conference)
+CIN @ IND (same_place_intra)
+PHI @ SDM (seventeenth)
+TAM @ BUF (same_place_intra)
+HOU @ SLC (same_place_intra)
+NAS @ DEN (same_place_intra)
+PHO @ DET (intra_conference)
+PIT @ MIA (same_place_intra)
+GRB @ NYS (inter_conference)
+CLE @ BOS (same_place_intra)
+CHA @ NYE (same_place_intra)
+CHI @ LAA (same_place_intra)
+MIN @ JAX (seventeenth)
+SEA @ BAL (inter_conference)
+SFO @ DAL (intra_conference)
+ATL @ NOV (inter_conference)
+Byes: None
+Total partidos: 16
+
+=== RESUMEN FINAL ===
+Total partidos: 272
+Partidos por tipo:
+- intra_conference: 64
+- divisional: 96
+- seventeenth: 16
+- same_place_intra: 32
+- inter_conference: 64
+
+Estad├¡sticas por equipo:
+ATL: 9 Home / 8 Away / Bye: 9
+   Rivales: NAS(H), JAX(H), TAM(A), CHA(H), DET(A), BAL(A), CIN(H), CHA(A), DAL(A), TAM(A), CLE(H), MIA(A), PIT(H), HOU(A), WAS(H), JAX(A), NOV(H)
+BAL: 9 Home / 8 Away / Bye: 11
+   Rivales: SDM(H), CIN(H), PIT(A), LAA(H), DAL(H), ATL(H), NYS(H), JAX(A), SFO(H), PIT(A), CIN(A), CLE(H), CHA(A), TAM(A), BUF(A), CLE(A), SEA(A)
+BOS: 8 Home / 9 Away / Bye: 8
+   Rivales: WAS(H), NYE(A), NYS(H), NYS(H), BUF(A), CHI(H), DEN(A), JAX(H), PHI(A), MIA(A), GRB(H), IND(A), DET(H), MIN(A), NYE(H), MIA(H), CLE(A)
+BUF: 8 Home / 9 Away / Bye: 14
+   Rivales: NYS(H), IND(A), WAS(H), IND(H), BOS(H), PHI(A), PHI(A), WAS(A), PHO(H), KCC(A), NYE(A), MIA(A), LAA(H), SLC(H), BAL(H), DEN(H), TAM(A)
+CHA: 8 Home / 9 Away / Bye: 13
+   Rivales: GRB(A), HOU(A), JAX(H), ATL(A), NOV(A), JAX(A), CLE(H), ATL(H), CIN(H), TAM(A), IND(A), NAS(A), BAL(H), DAL(H), TAM(H), PIT(H), NYE(H)
+CHI: 9 Home / 8 Away / Bye: 7
+   Rivales: MIN(H), GRB(A), MIA(A), NYE(H), PHO(A), BOS(A), DET(H), DEN(H), MIN(H), DET(H), TAM(A), SLC(A), NYS(A), KCC(H), DAL(A), GRB(A), LAA(H)
+CIN: 8 Home / 9 Away / Bye: 6
+   Rivales: TAM(H), BAL(A), NYE(H), SDM(A), JAX(H), ATL(A), LAA(A), CHA(A), CLE(A), NOV(H), BAL(H), SEA(A), CLE(A), PIT(H), PIT(H), SFO(H), IND(H)
+CLE: 8 Home / 9 Away / Bye: 8
+   Rivales: LAA(H), TAM(H), NAS(A), PIT(A), SFO(A), PIT(H), CHA(A), SEA(A), CIN(H), JAX(H), ATL(A), BAL(A), CIN(H), SDM(A), PHI(H), BAL(H), BOS(H)
+DAL: 9 Home / 8 Away / Bye: 12
+   Rivales: NOV(A), NAS(H), SDM(A), HOU(H), BAL(A), TAM(H), HOU(H), SEA(H), NOV(A), ATL(H), NAS(A), KCC(A), JAX(A), CHA(A), CHI(H), LAA(H), SFO(A)
+DEN: 9 Home / 8 Away / Bye: 5
+   Rivales: KCC(H), WAS(A), KCC(A), SLC(A), GRB(H), BOS(H), PHO(H), CHI(A), PHO(H), SDM(A), PHI(H), DET(A), SLC(H), IND(A), MIN(H), BUF(A), NAS(A)
+DET: 8 Home / 9 Away / Bye: 10
+   Rivales: NYE(A), NYS(H), SEA(H), MIN(H), ATL(H), MIN(H), GRB(A), CHI(A), MIA(H), CHI(A), SLC(A), DEN(H), BOS(A), GRB(H), HOU(A), KCC(H), PHO(A)
+GRB: 8 Home / 9 Away / Bye: 9
+   Rivales: CHA(H), CHI(H), MIN(A), SFO(H), MIA(A), DEN(A), DET(H), SLC(A), NYE(H), PHO(H), BOS(A), NOV(A), MIN(H), DET(A), KCC(A), CHI(H), NYS(H)
+HOU: 8 Home / 9 Away / Bye: 8
+   Rivales: SEA(H), CHA(H), NOV(A), DAL(A), NAS(H), SDM(A), DAL(A), PIT(H), NOV(H), LAA(A), JAX(A), SFO(A), NAS(A), ATL(H), DET(H), TAM(H), SLC(H)
+IND: 8 Home / 9 Away / Bye: 6
+   Rivales: PHI(A), BUF(H), PHO(A), BUF(A), SLC(H), WAS(A), MIA(A), PHI(H), NYS(A), CHA(H), KCC(H), BOS(H), NYE(H), DEN(H), SFO(H), WAS(A), CIN(A)
+JAX: 8 Home / 9 Away / Bye: 10
+   Rivales: PIT(A), ATL(A), CHA(A), TAM(H), CIN(A), CHA(H), TAM(A), BAL(H), BOS(A), CLE(A), HOU(H), PHI(H), DAL(H), NOV(H), NAS(H), ATL(H), MIN(A)
+KCC: 8 Home / 9 Away / Bye: 6
+   Rivales: DEN(A), PHI(H), DEN(H), PHO(A), LAA(A), SLC(H), NYS(A), SLC(H), BUF(H), MIN(H), IND(A), DAL(H), PHO(A), CHI(A), GRB(H), DET(A), WAS(H)
+LAA: 9 Home / 8 Away / Bye: 7
+   Rivales: CLE(A), NOV(H), SFO(A), BAL(A), KCC(H), SEA(A), CIN(H), SDM(H), SEA(A), HOU(H), PIT(H), BUF(A), SFO(H), NAS(A), SDM(H), DAL(A), CHI(A)
+MIA: 9 Home / 8 Away / Bye: 14
+   Rivales: SLC(A), MIN(A), CHI(H), PHI(A), GRB(H), NYE(H), NYE(A), IND(H), DET(A), WAS(A), BOS(H), BUF(H), ATL(H), NYS(A), NYS(H), BOS(A), PIT(A)
+MIN: 9 Home / 8 Away / Bye: 5
+   Rivales: CHI(A), MIA(H), GRB(H), DET(A), DET(A), PHO(H), SDM(A), NAS(H), CHI(A), KCC(A), NYE(H), NYS(A), GRB(A), BOS(H), DEN(A), SLC(H), JAX(H)
+NAS: 9 Home / 8 Away / Bye: 10
+   Rivales: ATL(A), DAL(A), CLE(H), NOV(H), HOU(A), NOV(A), SEA(A), SFO(A), MIN(A), DAL(H), CHA(H), TAM(H), HOU(H), LAA(H), JAX(A), SDM(A), DEN(H)
+NOV: 9 Home / 8 Away / Bye: 8
+   Rivales: DAL(H), LAA(A), HOU(H), NAS(A), CHA(H), NAS(H), SFO(H), DAL(H), HOU(A), CIN(A), SDM(H), GRB(H), TAM(A), JAX(A), PHO(A), SEA(A), ATL(A)
+NYE: 9 Home / 8 Away / Bye: 9
+   Rivales: DET(H), BOS(H), CIN(A), CHI(A), NYS(A), MIA(A), MIA(H), PHI(H), GRB(A), BUF(H), MIN(A), WAS(H), IND(A), PHO(H), BOS(A), NYS(H), CHA(A)
+NYS: 9 Home / 8 Away / Bye: 12
+   Rivales: BUF(A), DET(A), BOS(A), BOS(A), NYE(H), WAS(H), BAL(A), KCC(H), TAM(H), IND(H), PHI(A), MIN(H), CHI(H), MIA(H), MIA(A), NYE(A), GRB(A)
+PHI: 9 Home / 8 Away / Bye: 5
+   Rivales: IND(H), KCC(A), SLC(A), MIA(H), BUF(H), BUF(H), NYE(A), IND(A), BOS(H), NYS(H), DEN(A), JAX(A), WAS(A), WAS(A), CLE(A), PHO(H), SDM(H)
+PHO: 9 Home / 8 Away / Bye: 13
+   Rivales: SFO(A), SLC(H), IND(H), KCC(H), CHI(H), SLC(A), MIN(A), DEN(A), BUF(A), DEN(A), GRB(A), WAS(H), KCC(H), NYE(A), NOV(H), PHI(A), DET(H)
+PIT: 9 Home / 8 Away / Bye: 7
+   Rivales: JAX(H), SEA(H), BAL(H), CLE(H), WAS(H), CLE(A), TAM(A), HOU(A), BAL(H), SFO(A), LAA(A), SDM(H), ATL(A), CIN(A), CIN(A), CHA(A), MIA(H)
+SDM: 8 Home / 9 Away / Bye: 7
+   Rivales: BAL(A), SFO(A), DAL(H), CIN(H), SEA(H), HOU(H), MIN(H), LAA(A), SFO(H), DEN(H), NOV(A), PIT(A), SEA(A), CLE(H), LAA(A), NAS(H), PHI(A)
+SEA: 8 Home / 9 Away / Bye: 11
+   Rivales: HOU(A), PIT(A), DET(A), WAS(A), SDM(A), LAA(H), NAS(H), DAL(A), CLE(H), LAA(H), SFO(A), CIN(H), SDM(H), SFO(H), SLC(A), NOV(H), BAL(H)
+SFO: 8 Home / 9 Away / Bye: 6
+   Rivales: PHO(H), SDM(H), LAA(H), GRB(A), CLE(H), NOV(A), NAS(H), BAL(A), SDM(A), PIT(H), SEA(H), HOU(H), LAA(A), SEA(A), IND(A), CIN(A), DAL(H)
+SLC: 8 Home / 9 Away / Bye: 10
+   Rivales: MIA(H), PHO(A), PHI(H), DEN(H), IND(A), PHO(H), KCC(A), GRB(H), KCC(A), WAS(H), DET(H), CHI(H), DEN(A), BUF(A), SEA(H), MIN(A), HOU(A)
+TAM: 8 Home / 9 Away / Bye: 5
+   Rivales: CIN(A), CLE(A), ATL(H), JAX(A), DAL(A), JAX(H), PIT(H), NYS(A), CHA(H), ATL(H), CHI(H), NAS(A), NOV(H), BAL(H), CHA(A), HOU(A), BUF(H)
+WAS: 9 Home / 8 Away / Bye: 9
+   Rivales: BOS(A), DEN(H), BUF(A), SEA(H), PIT(A), NYS(A), IND(H), BUF(H), MIA(H), SLC(A), PHO(A), NYE(A), PHI(H), PHI(H), ATL(A), IND(H), KCC(A)

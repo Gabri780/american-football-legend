@@ -3,74 +3,74 @@ import { SeededRandom } from './prng';
 
 const HIGHLIGHT_TEMPLATES: Record<DriveOutcome, string[]> = {
   'TD': [
-    "Touchdown. A clean execution capped with points in the end zone.",
-    "Touchdown! An electric play that left the defense without answers.",
-    "The offense breaks the final line of resistance for a crucial touchdown.",
-    "Touchdown after a series of flawless plays. Total dominance.",
-    "A precise pass into the heart of the defense for the score."
+    "Touchdown. A methodical drive capped off with points in the end zone.",
+    "Touchdown! An explosive play leaves the defense searching for answers.",
+    "The offense punch it in for a crucial touchdown after a gritty series.",
+    "Flawless execution ends in a touchdown. Total dominance on display.",
+    "A laser-accurate pass finds the target for the score."
   ],
   'FG': [
-    "The kick is good. The drive results in three valuable points.",
-    "The kicker makes no mistake, securing points after a solid series.",
+    "The kick is up and it's good. Three points added to the tally.",
+    "The kicker splits the uprights to secure points after a solid drive.",
     "Field goal converted. The offense salvages points from the possession.",
-    "Perfect split of the uprights. Three more points on the board.",
-    "After stalling in the red zone, the field goal goes through without issues."
+    "Perfect strike from the hold. Three more points on the board.",
+    "After stalling in the red zone, the field goal is true."
   ],
   'MISSED_FG': [
-    "The kick sails wide. A missed opportunity to put points on the board.",
-    "The field goal hits the upright and bounces out. Tough luck for the team.",
-    "Failed attempt. Wind or poor aim denies the three points.",
-    "No points. The kicker fails to connect between the uprights.",
-    "A wasted opportunity after a long drive ends in nothing."
+    "The kick sails wide right. A massive missed opportunity for points.",
+    "The field goal clanks off the upright! Heartbreak for the kicking unit.",
+    "No good! The attempt falls short as the wind plays a factor.",
+    "Wide left. The kicker fails to connect from distance.",
+    "A promising drive ends in frustration as the field goal misses."
   ],
   'PUNT': [
-    "The offense stalls and is forced to punt.",
-    "Three and out. The defense completely dominated this series.",
-    "A long punt pins the opponent deep in their own territory.",
-    "No options to advance. Punting is the only way out.",
-    "Drive stalled at midfield. Ball goes over to the opponent."
+    "The drive stalls at midfield, forcing the punting unit onto the field.",
+    "Three and out. The defense completely suffocated that possession.",
+    "A booming punt pins the opponent deep in their own territory.",
+    "Stymied by the defense, the offense is forced to kick it away.",
+    "No way through. The ball is punted back to the opposition."
   ],
   'TURNOVER_INT': [
-    "Intercepted! The QB takes too much risk and gives away possession.",
-    "A poor read that ends up in the hands of the opposing safety.",
-    "Picked off. The defense reads the play and steals the ball.",
-    "Deflected pass ends up being intercepted by the linebacker.",
-    "Costly mistake by the quarterback as he surrenders the ball through the air."
+    "Intercepted! An ill-advised pass is picked off in the secondary.",
+    "A poor read results in a momentum-shifting interception.",
+    "Picked off! The defense jumps the route to steal the ball.",
+    "The pass is tipped and hauled in by the defense. Costly turnover.",
+    "The quarterback forces it into coverage and pays the price."
   ],
   'TURNOVER_FUMBLE': [
-    "Fumble! The runner loses the ball and the defense recovers.",
-    "Loose ball on impact. Possession goes to the opposing team.",
-    "Ball-handling error results in a loss of possession.",
-    "The defense forces the fumble and jumps on it successfully.",
-    "Traumatic turnover in the middle of a promising drive."
+    "Fumble! The ball is loose and the defense pounces on it.",
+    "Devastating fumble! Possession is surrendered on a heavy hit.",
+    "Ball security issues prove costly as the defense recovers the fumble.",
+    "The defense rips it away! A crucial turnover in a key moment.",
+    "Disaster strikes as the runner coughs up the football."
   ],
   'DOWNS': [
-    "Failed fourth-down attempt. The defense holds firm.",
-    "They fail to reach the marker. Turnover on downs.",
-    "Risky gamble on 4th down that doesn't pay off.",
-    "The defense shuts down all lanes and takes the ball back.",
-    "Stopped inches short. Change of possession."
+    "The fourth-down gamble fails. The defense holds the line.",
+    "Stopped short! The defense comes up huge on fourth down.",
+    "A gutsy call on fourth down backfires. Turnover on downs.",
+    "The defense shuts the door, forcing a change of possession.",
+    "Inches short! The marker remains out of reach."
   ],
   'SAFETY': [
-    "Safety! The QB is tackled in his own end zone.",
-    "Disaster on the line: the runner is stopped for a safety.",
-    "Fatal error that gives away two points and the ball to the rival.",
-    "Trapped in the end zone. The defensive pressure claims its prize.",
-    "Penalty or tackle in the end zone. Two points for the opponent."
+    "Safety! The quarterback is swarmed in the end zone for two points.",
+    "Disaster in the backfield: the runner is tackled for a safety.",
+    "A catastrophic error results in a safety and a change of possession.",
+    "Nowhere to run! The defense scores two on a dominant safety.",
+    "Pinned deep, the offense surrenders a safety under heavy pressure."
   ],
   'END_HALF': [
-    "Time runs out. The drive ends with the conclusion of the half.",
-    "The clock hits zero before they can attempt to score.",
-    "End of the second quarter. Players head to the locker rooms.",
-    "No more time. The possession dies with the buzzer.",
-    "Clock management ends up exhausting the period's time."
+    "The clock strikes zero. Both teams head to the locker rooms.",
+    "Time expires on the half. A tactical battle so far.",
+    "End of the second quarter. The drive concludes with the buzzer.",
+    "No time remaining. The half comes to an end.",
+    "Clock management exhausts the final seconds of the period."
   ],
   'END_GAME': [
-    "Final whistle. The drive concludes with the end of the game.",
-    "No time left on the clock. Victory secured.",
-    "The match ends during this possession.",
-    "End of hostilities. The clock dictates the verdict.",
-    "Game time expires. The match is over."
+    "The final whistle blows. That'll do it from this one.",
+    "Zeroes on the clock. Victory is secured as time expires.",
+    "The game concludes with this final possession.",
+    "Hostilities end as the game clock reaches its limit.",
+    "Game over. The final drive ends with the conclusion of the match."
   ]
 };
 

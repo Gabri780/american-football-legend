@@ -1,0 +1,27 @@
+﻿
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/Gabrii/Desktop/AmericanFootballLegend[39m
+
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateMatchups (Fase 1)[2m > [22mproduces exactly 272 matchups
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateMatchups (Fase 1)[2m > [22meach team appears in exactly 17 matchups
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateMatchups (Fase 1)[2m > [22meach team plays exactly 6 divisional games
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateMatchups (Fase 1)[2m > [22meach team plays each divisional rival exactly twice
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateMatchups (Fase 1)[2m > [22mis deterministic: same year produces same matchups
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateMatchups (Fase 1)[2m > [22mdifferent years produce different matchups (rotations differ)
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22mproduces exactly 272 games[33m 3505[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22meach team plays exactly 17 games[33m 3475[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22meach team has exactly 1 bye in weeks 5-14[33m 3494[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22mno team plays during its bye week[33m 3501[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22mno team plays twice in the same week[33m 3503[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22meach team has 8-9 home games[33m 3493[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22mweeks 1-18 each have between 13 and 16 games[33m 3495[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22msame seed produces identical schedule
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22mdifferent seeds produce different schedules but same matchup set
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22mno team has 4 or more consecutive away games[33m 3464[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22mweek 18 contains exactly 16 games, all divisional[33m 3475[2mms[22m[39m
+ [32mÔ£ô[39m tests/schedule.test.ts[2m > [22mgenerateSchedule (Fase 2)[2m > [22mweek 18 has every team playing exactly once[33m 3498[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m18 passed[39m[22m[90m (18)[39m
+[2m   Start at [22m 23:43:41
+[2m   Duration [22m 35.43s[2m (transform 84ms, setup 0ms, collect 106ms, tests 34.97s, environment 0ms, prepare 113ms)[22m
+
