@@ -81,7 +81,7 @@ describe('simulateCareer with contracts integration', () => {
       userTeamId: teams[0].id,
       startYear: 0,
       retireDecisionCallback: (ctx) => ctx.player.age >= 38,
-      faCallback: (offers) => offers[0],  // siempre primera oferta
+      wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }), faCallback: (offers) => offers[0],  // siempre primera oferta
       rng: new SeededRandom('career'),
       maxYears: 25
     });
@@ -98,7 +98,7 @@ describe('simulateCareer with contracts integration', () => {
       userTeamId: teams[0].id,
       startYear: 0,
       retireDecisionCallback: () => false,
-      faCallback: () => null,  // siempre rechaza todas
+      wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }), faCallback: () => null,  // siempre rechaza todas
       rng: new SeededRandom('career2'),
       maxYears: 25
     });
@@ -114,7 +114,7 @@ describe('simulateCareer with contracts integration', () => {
       userTeamId: teams[0].id,
       startYear: 0,
       retireDecisionCallback: (ctx: any) => ctx.player.age >= 38,
-      faCallback: (offers: any[]) => offers[0],
+      wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }), faCallback: (offers: any[]) => offers[0],
       rng: new SeededRandom('career3'),
       maxYears: 25
     };

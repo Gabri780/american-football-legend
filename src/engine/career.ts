@@ -37,6 +37,7 @@ export interface SeasonHistoryEntry {
 }
 
 import { Contract, ContractsHistory, FreeAgencyDecisionCallback, generateRookieContract, processOffseasonContracts } from './contracts';
+import { initializeWealth, processOffseasonWealth, WealthState, WealthHistory, WealthDecisionCallback } from './wealth';
 
 export interface CareerResult {
   playerAtStart: Player;
@@ -52,6 +53,8 @@ export interface CareerResult {
   championshipsWon: number;
   superBowlAppearances: number;
   contractsHistory: ContractsHistory;
+  wealthState: WealthState;
+  wealthHistory: WealthHistory;
 }
 
 function accumulateStats(target: PlayerSeasonStats, source: PlayerSeasonStats): void {
@@ -121,10 +124,11 @@ export function simulateCareer(params: {
   startYear: number;
   retireDecisionCallback: RetireDecisionCallback;
   faCallback: FreeAgencyDecisionCallback;
+  wealthCallback: WealthDecisionCallback;
   rng: SeededRandom;
   maxYears?: number;
 }): CareerResult {
-  const { teams, userPlayer, userTeamId, startYear, retireDecisionCallback, faCallback, rng, maxYears = 25 } = params;
+  const { teams, userPlayer, userTeamId, startYear, retireDecisionCallback, faCallback, wealthCallback, rng, maxYears = 25 } = params;
 
   if (!teams.find(t => t.id === userTeamId)) {
     throw new Error(`userTeamId ${userTeamId} not found in teams array.`);
@@ -171,6 +175,9 @@ export function simulateCareer(params: {
     yearsTotal: currentContract.yearsTotal,
     guaranteedTotal: currentContract.guaranteedTotal
   });
+
+  let wealthState: WealthState = initializeWealth(userTeamId, rng.derive('wealth-init'));
+  const wealthHistory: WealthHistory = { events: [] };
 
   const recentStatsHistory: PlayerSeasonStats[] = [];
 
@@ -284,6 +291,19 @@ export function simulateCareer(params: {
     } else {
       currentContract = offseasonResult.newContract!;
       currentTeamId = currentContract.teamId;
+
+      const wealthResult = processOffseasonWealth({
+        player: currentPlayer,
+        currentState: wealthState,
+        currentYear,
+        grossEarningsThisYear: offseasonResult.earningsThisYear,
+        userTeamId: currentTeamId,
+        decisionsCallback: wealthCallback,
+        rng: rng.derive(`wealth-y${currentYear}`)
+      });
+      
+      wealthState = wealthResult.newState;
+      wealthHistory.events.push(...wealthResult.events);
     }
 
     // 12. decideRetirement (solo si no se retiró por FA)
@@ -322,6 +342,8 @@ export function simulateCareer(params: {
     careerPlayoffStats,
     championshipsWon,
     superBowlAppearances,
-    contractsHistory
+    contractsHistory,
+    wealthState,
+    wealthHistory
   };
 }
