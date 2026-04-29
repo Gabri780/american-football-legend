@@ -55,6 +55,7 @@ export interface CareerResult {
   contractsHistory: ContractsHistory;
   wealthState: WealthState;
   wealthHistory: WealthHistory;
+  userDraftPick: number;  // 1-32, posición del usuario en el draft del startYear
 }
 
 function accumulateStats(target: PlayerSeasonStats, source: PlayerSeasonStats): void {
@@ -133,6 +134,8 @@ export function simulateCareer(params: {
   if (!teams.find(t => t.id === userTeamId)) {
     throw new Error(`userTeamId ${userTeamId} not found in teams array.`);
   }
+
+  const userDraftPick = calculateUserDraftPick(teams, userTeamId);
 
   if (userPlayer.position !== 'QB' && userPlayer.position !== 'RB' && userPlayer.position !== 'WR') {
     throw new Error(`userPlayer.position must be QB, RB, or WR. Got ${userPlayer.position}.`);
@@ -344,6 +347,29 @@ export function simulateCareer(params: {
     superBowlAppearances,
     contractsHistory,
     wealthState,
-    wealthHistory
+    wealthHistory,
+    userDraftPick
   };
+}
+
+/**
+ * Calcula el pick number del usuario en su draft year.
+ * Synthetic standings: peor combined rating (offense + defense) = pick #1.
+ * Tiebreaker: teamId alfabético ascendente (igual que generateSchedule).
+ * 
+ * @returns pick number entre 1 y 32 inclusive
+ */
+function calculateUserDraftPick(teams: Team[], userTeamId: string): number {
+  const sorted = [...teams].sort((a, b) => {
+    const combinedA = a.offenseRating + a.defenseRating;
+    const combinedB = b.offenseRating + b.defenseRating;
+    if (combinedA !== combinedB) return combinedA - combinedB; // ASC: peor primero
+    return a.id.localeCompare(b.id);
+  });
+  
+  const pickIndex = sorted.findIndex(t => t.id === userTeamId);
+  if (pickIndex === -1) {
+    throw new Error(`userTeamId ${userTeamId} not found in teams when calculating draft pick`);
+  }
+  return pickIndex + 1; // 1-indexed
 }
