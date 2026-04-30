@@ -6,7 +6,7 @@ import { PlayoffRound, PlayoffsResult, simulatePlayoffs } from './playoffs';
 import { SeededRandom } from './prng';
 import { progressPlayer } from './progression';
 
-export type RetirementReason = 
+export type RetirementReason =
   | 'age_threshold'
   | 'forced_max_age'
   | 'callback_chose'
@@ -79,32 +79,45 @@ function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val));
 }
 
+const LEAGUE_MEAN_RATING = 70;
+const REVERSION_STRENGTH = 0.05;
+
 function ageLeague(teams: Team[], rng: SeededRandom): void {
   for (const team of teams) {
-    const offDrift = rng.randomInt(-3, 3);
-    const defDrift = rng.randomInt(-3, 3);
-    team.offenseRating = clamp(team.offenseRating + offDrift, 40, 99);
-    team.defenseRating = clamp(team.defenseRating + defDrift, 40, 99);
+    // Reversion-to-mean: equipos extremos tienden al centro
+    const offDistance = team.offenseRating - LEAGUE_MEAN_RATING;
+    const defDistance = team.defenseRating - LEAGUE_MEAN_RATING;
+
+    const offReversion = -offDistance * REVERSION_STRENGTH;
+    const defReversion = -defDistance * REVERSION_STRENGTH;
+
+    // Ruido random ±3
+    const offNoise = rng.randomInt(-3, 3);
+    const defNoise = rng.randomInt(-3, 3);
+
+    // Aplicar y clamp
+    team.offenseRating = clamp(Math.round(team.offenseRating + offReversion + offNoise), 40, 99);
+    team.defenseRating = clamp(Math.round(team.defenseRating + defReversion + defNoise), 40, 99);
   }
 }
 
 function decideRetirement(
-  player: Player, 
+  player: Player,
   yearsPlayed: number,
   peakOverall: number,
   callback: RetireDecisionCallback
 ): RetirementReason | null {
-  
+
   const FORCED_MAX = { QB: 42, RB: 36, WR: 38 };
   const SUGGEST_AGE = { QB: 36, RB: 30, WR: 32 };
   const SUGGEST_OVR = 75;
-  
+
   const maxAge = FORCED_MAX[player.position as keyof typeof FORCED_MAX];
   const suggestAge = SUGGEST_AGE[player.position as keyof typeof SUGGEST_AGE];
-  
+
   // 1. Cap forzado: retiro automático sin consultar
   if (player.age >= maxAge) return 'forced_max_age';
-  
+
   // 2. Sugerencia: solo si edad Y OVR pasan umbral
   if (player.age >= suggestAge && player.overall <= SUGGEST_OVR) {
     const userChose = callback({
@@ -114,7 +127,7 @@ function decideRetirement(
     });
     if (userChose) return 'callback_chose';
   }
-  
+
   return null;  // sigue jugando
 }
 
@@ -143,24 +156,24 @@ export function simulateCareer(params: {
 
   let currentPlayer = structuredClone(userPlayer);
   const currentTeams = structuredClone(teams);
-  
+
   let peakOverall = currentPlayer.overall;
   const history: SeasonHistoryEntry[] = [];
-  
+
   const careerRegularStats: PlayerSeasonStats = {
     gamesPlayed: 0, passYards: 0, passTDs: 0, interceptions: 0,
     completions: 0, passAttempts: 0, rushYards: 0, rushTDs: 0,
     carries: 0, fumbles: 0, receivingYards: 0, receivingTDs: 0,
     receptions: 0, targets: 0
   };
-  
+
   const careerPlayoffStats: PlayerSeasonStats = {
     gamesPlayed: 0, passYards: 0, passTDs: 0, interceptions: 0,
     completions: 0, passAttempts: 0, rushYards: 0, rushTDs: 0,
     carries: 0, fumbles: 0, receivingYards: 0, receivingTDs: 0,
     receptions: 0, targets: 0
   };
-  
+
   let championshipsWon = 0;
   let superBowlAppearances = 0;
   let currentYear = startYear;
@@ -195,29 +208,29 @@ export function simulateCareer(params: {
 
     // 3. simulateSeason
     const seasonRng = rng.derive(`season-y${currentYear}`);
-    const seasonResult = simulateSeason({ 
-      teams: currentTeams, 
-      schedule, 
-      userPlayer: currentPlayer, 
-      userTeamId: currentTeamId, 
-      rng: seasonRng 
+    const seasonResult = simulateSeason({
+      teams: currentTeams,
+      schedule,
+      userPlayer: currentPlayer,
+      userTeamId: currentTeamId,
+      rng: seasonRng
     });
 
     // 4. simulatePlayoffs
     const playoffsRng = rng.derive(`playoffs-y${currentYear}`);
-    const playoffsResult = simulatePlayoffs({ 
-      seasonResult, 
-      teams: currentTeams, 
-      userPlayer: currentPlayer, 
-      userTeamId: currentTeamId, 
-      rng: playoffsRng 
+    const playoffsResult = simulatePlayoffs({
+      seasonResult,
+      teams: currentTeams,
+      userPlayer: currentPlayer,
+      userTeamId: currentTeamId,
+      rng: playoffsRng
     });
 
     // 5. Acumular stats de carrera y contadores
     accumulateStats(careerRegularStats, seasonResult.playerSeasonStats);
     accumulateStats(careerPlayoffStats, playoffsResult.playerPlayoffStats);
     recentStatsHistory.push(seasonResult.playerSeasonStats);
-    
+
     if (playoffsResult.userPlayoffExitRound === 'champion') {
       championshipsWon++;
     }
@@ -253,10 +266,10 @@ export function simulateCareer(params: {
       ovrAtStart,
       ovrAtEnd,
       teamId: currentTeamId,
-      regularSeasonRecord: { 
-        wins: teamStandings.wins, 
-        losses: teamStandings.losses, 
-        ties: teamStandings.ties 
+      regularSeasonRecord: {
+        wins: teamStandings.wins,
+        losses: teamStandings.losses,
+        ties: teamStandings.ties
       },
       madePlayoffs: playoffsResult.userMadePlayoffs,
       playoffExitRound: playoffsResult.userPlayoffExitRound,
@@ -304,7 +317,7 @@ export function simulateCareer(params: {
         decisionsCallback: wealthCallback,
         rng: rng.derive(`wealth-y${currentYear}`)
       });
-      
+
       wealthState = wealthResult.newState;
       wealthHistory.events.push(...wealthResult.events);
     }
@@ -323,11 +336,11 @@ export function simulateCareer(params: {
   if (history.length !== yearsPlayed) {
     throw new Error(`history length (${history.length}) does not match yearsPlayed (${yearsPlayed})`);
   }
-  
+
   if (yearsPlayed < 1) {
     throw new Error("Career ended before 1 season was played.");
   }
-  
+
   if (yearsPlayed >= maxYears && retirementReason === null) {
     throw new Error(`Reached maxYears cap (${maxYears}) without retiring.`);
   }
@@ -366,7 +379,7 @@ function calculateUserDraftPick(teams: Team[], userTeamId: string): number {
     if (combinedA !== combinedB) return combinedA - combinedB; // ASC: peor primero
     return a.id.localeCompare(b.id);
   });
-  
+
   const pickIndex = sorted.findIndex(t => t.id === userTeamId);
   if (pickIndex === -1) {
     throw new Error(`userTeamId ${userTeamId} not found in teams when calculating draft pick`);
