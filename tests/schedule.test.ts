@@ -1,10 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { loadTeams } from '../src/data/loadTeams';
 import { SeededRandom } from '../src/engine/prng';
 import {
   generateMatchups,
   generateSchedule,
-  Matchup,
   Schedule
 } from '../src/engine/schedule';
 
@@ -68,18 +67,20 @@ describe('generateMatchups (Fase 1)', () => {
   });
 });
 
-describe('generateSchedule (Fase 2)', () => {
+describe('generateSchedule (Fase 2) - shared schedule', () => {
   const teams = loadTeams();
+  let s: Schedule;
+
+  beforeAll(() => {
+    const rng = new SeededRandom('test-1');
+    s = generateSchedule(teams, 0, rng);
+  });
 
   it('produces exactly 272 games', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
     expect(s.games).toHaveLength(272);
   });
 
   it('each team plays exactly 17 games', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
     for (const team of teams) {
       const games = s.games.filter(
         g => g.homeTeamId === team.id || g.awayTeamId === team.id
@@ -89,8 +90,6 @@ describe('generateSchedule (Fase 2)', () => {
   });
 
   it('each team has exactly 1 bye in weeks 5-14', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
     for (const team of teams) {
       const bye = s.byeWeeks.get(team.id);
       expect(bye).toBeDefined();
@@ -100,8 +99,6 @@ describe('generateSchedule (Fase 2)', () => {
   });
 
   it('no team plays during its bye week', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
     for (const team of teams) {
       const bye = s.byeWeeks.get(team.id)!;
       const gamesOnBye = s.games.filter(
@@ -112,8 +109,6 @@ describe('generateSchedule (Fase 2)', () => {
   });
 
   it('no team plays twice in the same week', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
     for (const team of teams) {
       const weeksPlayed = s.games
         .filter(g => g.homeTeamId === team.id || g.awayTeamId === team.id)
@@ -123,8 +118,6 @@ describe('generateSchedule (Fase 2)', () => {
   });
 
   it('each team has 8-9 home games', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
     for (const team of teams) {
       const homeGames = s.games.filter(g => g.homeTeamId === team.id);
       expect(homeGames.length).toBeGreaterThanOrEqual(8);
@@ -133,14 +126,53 @@ describe('generateSchedule (Fase 2)', () => {
   });
 
   it('weeks 1-18 each have between 13 and 16 games', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
     for (let w = 1; w <= 18; w++) {
       const gamesInWeek = s.games.filter(g => g.week === w).length;
       expect(gamesInWeek).toBeGreaterThanOrEqual(13);
       expect(gamesInWeek).toBeLessThanOrEqual(16);
     }
   });
+
+  it('no team has 4 or more consecutive away games', () => {
+    for (const team of teams) {
+      const sortedGames = s.games
+        .filter(g => g.homeTeamId === team.id || g.awayTeamId === team.id)
+        .sort((a, b) => a.week - b.week);
+      let maxAwayStreak = 0;
+      let currentStreak = 0;
+      for (const g of sortedGames) {
+        if (g.awayTeamId === team.id) {
+          currentStreak++;
+          if (currentStreak > maxAwayStreak) maxAwayStreak = currentStreak;
+        } else {
+          currentStreak = 0;
+        }
+      }
+      expect(maxAwayStreak).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('week 18 contains exactly 16 games, all divisional', () => {
+    const week18Games = s.games.filter(g => g.week === 18);
+    expect(week18Games).toHaveLength(16);
+    for (const g of week18Games) {
+      expect(g.type).toBe('divisional');
+    }
+  });
+
+  it('week 18 has every team playing exactly once', () => {
+    const week18Games = s.games.filter(g => g.week === 18);
+    const teamsInWeek18 = new Set<string>();
+    for (const g of week18Games) {
+      teamsInWeek18.add(g.homeTeamId);
+      teamsInWeek18.add(g.awayTeamId);
+    }
+    expect(teamsInWeek18.size).toBe(32);
+  });
+});
+
+describe('generateSchedule (Fase 2) - determinism', () => {
+  const teams = loadTeams();
 
   it('same seed produces identical schedule', () => {
     const s1 = generateSchedule(teams, 0, new SeededRandom('seed-A'));
@@ -163,48 +195,5 @@ describe('generateSchedule (Fase 2)', () => {
 
     // Pero las semanas asignadas pueden diferir
     expect(s1.games).not.toEqual(s2.games);
-  });
-
-  it('no team has 4 or more consecutive away games', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
-    for (const team of teams) {
-      const sortedGames = s.games
-        .filter(g => g.homeTeamId === team.id || g.awayTeamId === team.id)
-        .sort((a, b) => a.week - b.week);
-      let maxAwayStreak = 0;
-      let currentStreak = 0;
-      for (const g of sortedGames) {
-        if (g.awayTeamId === team.id) {
-          currentStreak++;
-          if (currentStreak > maxAwayStreak) maxAwayStreak = currentStreak;
-        } else {
-          currentStreak = 0;
-        }
-      }
-      expect(maxAwayStreak).toBeLessThanOrEqual(3);
-    }
-  });
-
-  it('week 18 contains exactly 16 games, all divisional', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
-    const week18Games = s.games.filter(g => g.week === 18);
-    expect(week18Games).toHaveLength(16);
-    for (const g of week18Games) {
-      expect(g.type).toBe('divisional');
-    }
-  });
-
-  it('week 18 has every team playing exactly once', () => {
-    const rng = new SeededRandom('test-1');
-    const s = generateSchedule(teams, 0, rng);
-    const week18Games = s.games.filter(g => g.week === 18);
-    const teamsInWeek18 = new Set<string>();
-    for (const g of week18Games) {
-      teamsInWeek18.add(g.homeTeamId);
-      teamsInWeek18.add(g.awayTeamId);
-    }
-    expect(teamsInWeek18.size).toBe(32);
   });
 });

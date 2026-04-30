@@ -1,11 +1,18 @@
 import { SeededRandom } from './prng';
 import { Team } from './team';
 
-export type MatchupType = 
-  | 'divisional' 
-  | 'intra_conference' 
-  | 'inter_conference' 
-  | 'same_place_intra' 
+class ScheduleAssignmentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ScheduleAssignmentError';
+  }
+}
+
+export type MatchupType =
+  | 'divisional'
+  | 'intra_conference'
+  | 'inter_conference'
+  | 'same_place_intra'
   | 'seventeenth';
 
 export interface Matchup {
@@ -57,7 +64,7 @@ function makeMatchup(t1: Team, t2: Team, type: MatchupType): Matchup {
 function generateDivisionalMatchups(teams: Team[]): Matchup[] {
   const result: Matchup[] = [];
   const divisions = groupByDivision(teams);
-  
+
   for (const divTeams of divisions.values()) {
     if (divTeams.length !== 4) {
       throw new Error(`Division has ${divTeams.length} teams, expected 4`);
@@ -70,7 +77,7 @@ function generateDivisionalMatchups(teams: Team[]): Matchup[] {
       }
     }
   }
-  
+
   if (result.length !== 96) {
     throw new Error(`Expected 96 divisional matchups, got ${result.length}`);
   }
@@ -102,7 +109,7 @@ function generateIntraConferenceMatchups(teams: Team[], year: number): Matchup[]
   const result: Matchup[] = [];
   const divisions = groupByDivision(teams);
   const rotation = INTRA_CONFERENCE_ROTATION[year % 3];
-  
+
   for (const [divA, divB] of rotation) {
     const teamsA = divisions.get(divA);
     const teamsB = divisions.get(divB);
@@ -115,7 +122,7 @@ function generateIntraConferenceMatchups(teams: Team[], year: number): Matchup[]
       }
     }
   }
-  
+
   if (result.length !== 64) {
     throw new Error(`Expected 64 intra-conference matchups, got ${result.length}`);
   }
@@ -153,7 +160,7 @@ function generateInterConferenceMatchups(teams: Team[], year: number): Matchup[]
   const result: Matchup[] = [];
   const divisions = groupByDivision(teams);
   const rotation = INTER_CONFERENCE_ROTATION[year % 4];
-  
+
   for (const [divEast, divWest] of rotation) {
     const teamsE = divisions.get(divEast);
     const teamsW = divisions.get(divWest);
@@ -166,7 +173,7 @@ function generateInterConferenceMatchups(teams: Team[], year: number): Matchup[]
       }
     }
   }
-  
+
   if (result.length !== 64) {
     throw new Error(`Expected 64 inter-conference matchups, got ${result.length}`);
   }
@@ -177,10 +184,10 @@ function generateSamePlaceIntraMatchups(teams: Team[], year: number): Matchup[] 
   const result: Matchup[] = [];
   const divisions = groupByDivision(teams);
   const rotation = INTRA_CONFERENCE_ROTATION[year % 3];
-  
+
   const EASTERN_DIVS = ['Eastern_East', 'Eastern_Atlantic', 'Eastern_North', 'Eastern_South'];
   const WESTERN_DIVS = ['Western_Central', 'Western_Mountain', 'Western_Pacific', 'Western_Southwest'];
-  
+
   for (const confDivs of [EASTERN_DIVS, WESTERN_DIVS]) {
     // Pares cruzados ese año en esta conferencia (orden canónico)
     const crossedKeys = new Set(
@@ -188,16 +195,16 @@ function generateSamePlaceIntraMatchups(teams: Team[], year: number): Matchup[] 
         .filter(([a]) => confDivs.includes(a))
         .map(([a, b]) => [a, b].sort().join('|'))
     );
-    
+
     // Generar todos los C(4,2)=6 pares de divisiones de la conferencia
     for (let i = 0; i < confDivs.length; i++) {
       for (let j = i + 1; j < confDivs.length; j++) {
         const key = [confDivs[i], confDivs[j]].sort().join('|');
         if (crossedKeys.has(key)) continue;  // saltar los 2 cruzados en regla 2
-        
+
         const standingsA = getSyntheticDivisionStandings(divisions.get(confDivs[i])!);
         const standingsB = getSyntheticDivisionStandings(divisions.get(confDivs[j])!);
-        
+
         // Posición 0 vs 0, 1 vs 1, 2 vs 2, 3 vs 3
         for (let pos = 0; pos < 4; pos++) {
           result.push(makeMatchup(standingsA[pos], standingsB[pos], 'same_place_intra'));
@@ -205,7 +212,7 @@ function generateSamePlaceIntraMatchups(teams: Team[], year: number): Matchup[] 
       }
     }
   }
-  
+
   if (result.length !== 32) {
     throw new Error(`Expected 32 same-place intra matchups, got ${result.length}`);
   }
@@ -216,16 +223,16 @@ function generateSeventeenthGameMatchups(teams: Team[], year: number): Matchup[]
   const result: Matchup[] = [];
   const divisions = groupByDivision(teams);
   const rotation = INTER_CONFERENCE_ROTATION[(year + 1) % 4];
-  
+
   for (const [divEast, divWest] of rotation) {
     const standingsE = getSyntheticDivisionStandings(divisions.get(divEast)!);
     const standingsW = getSyntheticDivisionStandings(divisions.get(divWest)!);
-    
+
     for (let pos = 0; pos < 4; pos++) {
       result.push(makeMatchup(standingsE[pos], standingsW[pos], 'seventeenth'));
     }
   }
-  
+
   if (result.length !== 16) {
     throw new Error(`Expected 16 seventeenth-game matchups, got ${result.length}`);
   }
@@ -236,7 +243,7 @@ export function generateMatchups(teams: Team[], year: number): Matchup[] {
   if (teams.length !== 32) {
     throw new Error(`Expected 32 teams, got ${teams.length}`);
   }
-  
+
   const all = [
     ...generateDivisionalMatchups(teams),
     ...generateIntraConferenceMatchups(teams, year),
@@ -244,11 +251,11 @@ export function generateMatchups(teams: Team[], year: number): Matchup[] {
     ...generateSamePlaceIntraMatchups(teams, year),
     ...generateSeventeenthGameMatchups(teams, year),
   ];
-  
+
   if (all.length !== 272) {
     throw new Error(`Expected 272 total matchups, got ${all.length}`);
   }
-  
+
   // Verificación: cada equipo aparece exactamente 17 veces
   const counts = new Map<string, number>();
   for (const m of all) {
@@ -260,14 +267,14 @@ export function generateMatchups(teams: Team[], year: number): Matchup[] {
       throw new Error(`Team ${teamId} has ${count} matchups, expected 17`);
     }
   }
-  
+
   return all;
 }
 
 function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Schedule {
   for (let attempt = 1; attempt <= 5; attempt++) {
     const attemptRng = rng.derive(`attempt-${attempt}`);
-    
+
     try {
       const byeWeeks = new Map<string, number>();
       const shuffledTeams = [...teams];
@@ -275,28 +282,28 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
         const j = attemptRng.randomInt(0, i);
         [shuffledTeams[i], shuffledTeams[j]] = [shuffledTeams[j], shuffledTeams[i]];
       }
-      
+
       // Reparto en 10 semanas (5 a 14) asegurando un número PAR de equipos por semana
       // Si descansan 3 equipos, quedan 29 jugando = 14.5 partidos (IMPOSIBLE).
       // Distribución: 6 semanas con 4 equipos, 4 semanas con 2 equipos.
       const byeWks = [
-        5,5,5,5,
-        6,6,6,6,
-        7,7,7,7,
-        8,8,8,8,
-        9,9,9,9,
-        10,10,10,10,
-        11,11,
-        12,12,
-        13,13,
-        14,14
+        5, 5, 5, 5,
+        6, 6, 6, 6,
+        7, 7, 7, 7,
+        8, 8, 8, 8,
+        9, 9, 9, 9,
+        10, 10, 10, 10,
+        11, 11,
+        12, 12,
+        13, 13,
+        14, 14
       ];
       for (let i = 0; i < 32; i++) {
         byeWeeks.set(shuffledTeams[i].id, byeWks[i]);
       }
-      
+
       const remainingMatchups = [...matchups];
-      
+
       // PROBLEMA 2: Pre-asignar semana 18 (100% divisional)
       const week18Matchups: Matchup[] = [];
       const divisions = groupByDivision(teams);
@@ -305,11 +312,11 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
         // Pares (0,1) y (2,3)
         const pairs = [[sorted[0], sorted[1]], [sorted[2], sorted[3]]];
         for (const [t1, t2] of pairs) {
-          const idx = remainingMatchups.findIndex(m => 
-            (m.teamAId === t1.id && m.teamBId === t2.id) || 
+          const idx = remainingMatchups.findIndex(m =>
+            (m.teamAId === t1.id && m.teamBId === t2.id) ||
             (m.teamAId === t2.id && m.teamBId === t1.id)
           );
-          if (idx === -1) throw new Error(`Divisional matchup not found for ${t1.id} vs ${t2.id}`);
+          if (idx === -1) throw new ScheduleAssignmentError(`Divisional matchup not found for ${t1.id} vs ${t2.id}`);
           week18Matchups.push(remainingMatchups.splice(idx, 1)[0]);
         }
       }
@@ -318,7 +325,7 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
       for (const t of teams) {
         teamUsedWeeks.set(t.id, new Set([byeWeeks.get(t.id)!, 18]));
       }
-      
+
       const weekLoads = new Array(19).fill(0);
       weekLoads[18] = 16;
       const scheduledGames: ScheduledGame[] = [];
@@ -335,16 +342,16 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
       const MAX_STEPS = 200000;
 
       function isAdjacentRematch(m: Matchup, w: number): boolean {
-        return scheduledGames.some(sg => 
+        return scheduledGames.some(sg =>
           (sg.week === w - 1 || sg.week === w + 1) &&
           ((sg.homeTeamId === m.teamAId && sg.awayTeamId === m.teamBId) ||
-           (sg.homeTeamId === m.teamBId && sg.awayTeamId === m.teamAId))
+            (sg.homeTeamId === m.teamBId && sg.awayTeamId === m.teamAId))
         );
       }
 
       function solve(unassigned: Matchup[]): boolean {
         if (unassigned.length === 0) return true;
-        
+
         backtrackSteps++;
         if (backtrackSteps > MAX_STEPS) return false;
 
@@ -355,12 +362,12 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
           const m = unassigned[i];
           const usedA = teamUsedWeeks.get(m.teamAId)!;
           const usedB = teamUsedWeeks.get(m.teamBId)!;
-          
+
           let count = 0;
           for (let w = 1; w <= 18; w++) {
             if (!usedA.has(w) && !usedB.has(w)) count++;
           }
-          
+
           if (count < minOptions) {
             minOptions = count;
             bestIdx = i;
@@ -394,9 +401,9 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
           usedB.add(w);
           weekLoads[w]++;
           scheduledGames.push({ week: w, homeTeamId: m.teamAId, awayTeamId: m.teamBId, type: m.type });
-          
+
           if (solve(nextUnassigned)) return true;
-          
+
           usedA.delete(w);
           usedB.delete(w);
           weekLoads[w]--;
@@ -407,13 +414,13 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
       }
 
       if (!solve(remainingMatchups)) {
-        throw new Error(`Could not assign matchups. Backtracking steps exceeded or no solution.`);
+        throw new ScheduleAssignmentError(`Could not assign matchups. Backtracking steps exceeded or no solution.`);
       }
 
       // Verificación Semana 18
       const week18Games = scheduledGames.filter(g => g.week === 18);
       if (week18Games.length !== 16 || week18Games.some(g => g.type !== 'divisional')) {
-        throw new Error("Week 18 integrity check failed: must be 16 divisional games.");
+        throw new ScheduleAssignmentError("Week 18 integrity check failed: must be 16 divisional games.");
       }
 
       // Asignar Home/Away con retry loop (greedy inteligente)
@@ -425,17 +432,17 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
         const haRng = attemptRng.derive(`ha-${haAttempt}`);
         const tempHomeCounts = new Map<string, number>(teams.map(t => [t.id, 0]));
         const currentAwayStreaks = new Map<string, number>(teams.map(t => [t.id, 0]));
-        
+
         // Ordenar cronológicamente para gestionar streaks, pero aleatorio dentro de cada semana
         const gamesForAssignment = [...scheduledGames].sort((a, b) => {
           if (a.week !== b.week) return a.week - b.week;
           return haRng.random() - 0.5;
         });
-        
+
         for (const m of gamesForAssignment) {
           const tA = m.homeTeamId; // IDs originales (orden alfabético)
           const tB = m.awayTeamId;
-          
+
           const hA = tempHomeCounts.get(tA)!;
           const hB = tempHomeCounts.get(tB)!;
           const sA = currentAwayStreaks.get(tA)!;
@@ -468,7 +475,7 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
             m.awayTeamId = tA;
           }
         }
-        
+
         let allValid = true;
         for (const [teamId, count] of tempHomeCounts) {
           if (count < 8 || count > 9) {
@@ -485,7 +492,7 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
             const sortedGames = gamesForAssignment
               .filter(g => g.homeTeamId === team.id || g.awayTeamId === team.id)
               .sort((a, b) => a.week - b.week);
-            
+
             let maxAwayStreak = 0;
             let currentStreak = 0;
             for (const g of sortedGames) {
@@ -504,7 +511,7 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
             }
           }
         }
-        
+
         if (allValid) {
           homeAwaySuccess = true;
           break;
@@ -521,18 +528,21 @@ function assignWeeks(matchups: Matchup[], teams: Team[], rng: SeededRandom): Sch
       }
 
       if (!homeAwaySuccess) {
-        throw new Error(`Attempt ${attempt}: Could not balance home/away or roadtrip constraints (${globalFailureType} failed for ${globalFailingTeam}).`);
+        throw new ScheduleAssignmentError(`Attempt ${attempt}: Could not balance home/away or roadtrip constraints (${globalFailureType} failed for ${globalFailingTeam}).`);
       }
-      
+
       return {
         year: 0, // se sobrescribe luego
         games: scheduledGames,
         byeWeeks
       };
-      
+
     } catch (e) {
+      if (!(e instanceof ScheduleAssignmentError)) {
+        throw e;
+      }
       if (attempt === 5) {
-        throw new Error(`Schedule assignment failed after 5 attempts. Last error: ${(e as Error).message}`);
+        throw new Error(`Schedule assignment failed after 5 attempts. Last error: ${e.message}`);
       }
     }
   }

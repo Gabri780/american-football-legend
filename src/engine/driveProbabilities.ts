@@ -2,7 +2,7 @@ import { DriveOutcome } from './drive';
 import { WeightedItem } from './prng';
 
 export const BASE_PROBABILITIES: Record<DriveOutcome, number> = {
-  'TD': 0.20,
+  'TD': 0.24,            // raised from 0.20 to address subscoring (combined 37.6 → target 42-44)
   'FG': 0.18,
   'PUNT': 0.42,
   'TURNOVER_INT': 0.07,
@@ -10,7 +10,7 @@ export const BASE_PROBABILITIES: Record<DriveOutcome, number> = {
   'DOWNS': 0.04,
   'MISSED_FG': 0.03,
   'SAFETY': 0.005,
-  'END_HALF': 0.005, // Splitting the 0.01 between HALF and GAME for convenience
+  'END_HALF': 0.005,
   'END_GAME': 0.005
 };
 
@@ -37,12 +37,13 @@ export function computeOutcomeProbabilities(
     probs['END_GAME'] = 0;
   }
 
-  // 3. Modulate by Matchup Delta
-  // P_TD_ajustada = P_TD_base × (1 + matchupDelta × 0.015)
-  // P_TURNOVER_ajustada = P_TURNOVER_base × (1 - matchupDelta × 0.012)
-  probs['TD'] *= (1 + matchupDelta * 0.015);
-  probs['TURNOVER_INT'] *= (1 - matchupDelta * 0.012);
-  probs['TURNOVER_FUMBLE'] *= (1 - matchupDelta * 0.012);
+  // 3. Modulate by Matchup Delta — calibrated v3 (records dispersion fix)
+  // v2 (0.020 TD / 0.018 turnover) moved records dispersion only slightly:
+  // best record 12.8→13.0, % teams >12 wins 2.3%→2.8% (NFL real 10-15%).
+  // v3 escalates further to drive better separation between strong and weak teams.
+  probs['TD'] *= (1 + matchupDelta * 0.025);
+  probs['TURNOVER_INT'] *= (1 - matchupDelta * 0.020);
+  probs['TURNOVER_FUMBLE'] *= (1 - matchupDelta * 0.020);
 
   // Clamps to avoid negative or extreme probabilities before renormalization
   probs['TD'] = Math.max(0.01, probs['TD']);
@@ -53,7 +54,7 @@ export function computeOutcomeProbabilities(
 
   // 4. Modulate by Yard Line
   const yardMults = getYardMultipliers(startYard);
-  
+
   items.forEach(item => {
     if (item.value === 'TD') item.weight *= yardMults.td;
     if (item.value === 'FG') item.weight *= yardMults.fg;
