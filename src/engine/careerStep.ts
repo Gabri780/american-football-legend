@@ -3,11 +3,20 @@ import { Team } from './team';
 import { SeededRandom } from './prng';
 import { Schedule, PlayerSeasonStats, SeasonResult, simulateSeason } from './season';
 import { Game } from './game';
-import { PlayoffsResult, simulatePlayoffs } from './playoffs';
-import { Contract, ContractsHistory, ContractOffer, FreeAgencyContext, generateRookieContract } from './contracts';
-import { WealthState, WealthHistory, WealthDecisions, initializeWealth } from './wealth';
+import { PlayoffRound, PlayoffsResult, simulatePlayoffs } from './playoffs';
+import { 
+  Contract, ContractsHistory, ContractOffer, FreeAgencyContext, 
+  generateRookieContract,
+  processOffseasonContracts as processOffseasonContractsInternal 
+} from './contracts';
+import { 
+  WealthState, WealthHistory, WealthDecisions, 
+  initializeWealth,
+  processOffseasonWealth as processOffseasonWealthInternal 
+} from './wealth';
 import { CareerResult, RetirementReason, SeasonHistoryEntry } from './career';
 import { generateSchedule } from './schedule';
+import { progressPlayer } from './progression';
 
 /**
  * Phase of the career flow. The motor enforces transitions:
@@ -89,6 +98,10 @@ export interface CareerState {
   // Retirement
   retirementReason: RetirementReason | null;  // null hasta retirement
   
+  // Year-end tracking
+  pendingEarningsThisYear: number;     // se llena en processOffseasonContracts, se consume en processOffseasonWealth
+  ovrAtStartOfCurrentYear: number;     // se setea al inicio del year, se usa al construir history entry
+
   // RNG state — para reanudar carrera con mismo determinismo
   rngSeed: string;       // seed maestro de la carrera
   rngStepCount: number;  // cuántas veces se ha derivado el rng (necesario para reanudar)
@@ -256,6 +269,9 @@ export function initializeCareer(params: {
     recentStatsHistory: [],
     
     retirementReason: null,
+    
+    pendingEarningsThisYear: 0,
+    ovrAtStartOfCurrentYear: currentPlayer.overall,
     
     rngSeed,
     rngStepCount: 0 
@@ -465,7 +481,60 @@ function servePlayoffsGame(state: CareerState): NextGameResult {
  *   transiciona a phase 'offseason_wealth'.
  */
 export function processOffseasonContracts(state: CareerState, decision: ContractDecision): CareerState {
-  throw new Error('Not implemented yet — Phase 2');
+  if (state.phase !== 'offseason_contracts') {
+    throw new Error(`processOffseasonContracts requires phase 'offseason_contracts', got '${state.phase}'`);
+  }
+  
+  // Construir recentTeamRecords desde currentSeasonResult.finalStandings
+  const recentTeamRecords = new Map<string, number>();
+  if (state.currentSeasonResult) {
+    for (const s of state.currentSeasonResult.finalStandings) {
+      recentTeamRecords.set(s.teamId, s.wins);
+    }
+  }
+  
+  // Llamar a processOffseasonContracts del motor original
+  // Workaround: crear un faCallback que SIEMPRE devuelve la decision pasada.
+  const faCallback = (offers: ContractOffer[], ctx: FreeAgencyContext) => decision;
+  
+  const offseasonRng = new SeededRandom(state.rngSeed).derive(`contracts-y${state.currentYear}`);
+  
+  const offseasonResult = processOffseasonContractsInternal({
+    player: state.currentPlayer,
+    currentContract: state.currentContract,
+    currentYear: state.currentYear,
+    yearsPlayed: state.yearsPlayed,
+    recentStats: state.recentStatsHistory.slice(-2),
+    recentTeamRecords,
+    teams: state.currentTeams,
+    faCallback,
+    rng: offseasonRng
+  });
+  
+  // Aplicar resultado al state
+  const newContractsHistory: ContractsHistory = {
+    events: [...state.contractsHistory.events, ...offseasonResult.contractEvents],
+    totalEarnings: state.contractsHistory.totalEarnings + offseasonResult.earningsThisYear
+  };
+  
+  if (offseasonResult.retired) {
+    return {
+      ...state,
+      phase: 'retired',
+      retirementReason: 'no_market',
+      contractsHistory: newContractsHistory
+    };
+  }
+  
+  // Continuar a offseason_wealth
+  return {
+    ...state,
+    phase: 'offseason_wealth',
+    currentContract: offseasonResult.newContract!,
+    currentTeamId: offseasonResult.newContract!.teamId,
+    contractsHistory: newContractsHistory,
+    pendingEarningsThisYear: offseasonResult.earningsThisYear
+  };
 }
 
 /**
@@ -476,7 +545,54 @@ export function processOffseasonContracts(state: CareerState, decision: Contract
  * Transiciona a phase 'offseason_ready' (o 'retired' si decideRetirement por edad).
  */
 export function processOffseasonWealth(state: CareerState, decisions: WealthDecisions): CareerState {
-  throw new Error('Not implemented yet — Phase 2');
+  if (state.phase !== 'offseason_wealth') {
+    throw new Error(`processOffseasonWealth requires phase 'offseason_wealth', got '${state.phase}'`);
+  }
+  
+  // El motor original requiere un decisionsCallback que devuelva las decisions
+  const decisionsCallback = () => decisions;
+  
+  const wealthRng = new SeededRandom(state.rngSeed).derive(`wealth-y${state.currentYear}`);
+  
+  const wealthResult = processOffseasonWealthInternal({
+    player: state.currentPlayer,
+    currentState: state.wealthState,
+    currentYear: state.currentYear,
+    grossEarningsThisYear: state.pendingEarningsThisYear,
+    userTeamId: state.currentTeamId,
+    decisionsCallback,
+    rng: wealthRng
+  });
+  
+  const newWealthHistory: WealthHistory = {
+    events: [...state.wealthHistory.events, ...wealthResult.events]
+  };
+  
+  // Crear state intermedio con wealth aplicado
+  const stateAfterWealth: CareerState = {
+    ...state,
+    wealthState: wealthResult.newState,
+    wealthHistory: newWealthHistory,
+    pendingEarningsThisYear: 0
+  };
+  
+  // === CHECK retirement (replica decideRetirement de career.ts) ===
+  const FORCED_MAX = { QB: 42, RB: 36, WR: 38 };
+  const maxAge = FORCED_MAX[stateAfterWealth.currentPlayer.position as keyof typeof FORCED_MAX];
+  
+  if (stateAfterWealth.currentPlayer.age >= maxAge) {
+    return {
+      ...stateAfterWealth,
+      phase: 'retired',
+      retirementReason: 'forced_max_age'
+    };
+  }
+  
+  // Si no se retiró: transición a offseason_ready
+  return {
+    ...stateAfterWealth,
+    phase: 'offseason_ready'
+  };
 }
 
 /**
@@ -485,7 +601,113 @@ export function processOffseasonWealth(state: CareerState, decisions: WealthDeci
  * Transiciona a phase 'preseason'.
  */
 export function startNextYear(state: CareerState): CareerState {
-  throw new Error('Not implemented yet — Phase 2');
+  if (state.phase !== 'offseason_ready') {
+    throw new Error(`startNextYear requires phase 'offseason_ready', got '${state.phase}'`);
+  }
+  
+  // === Construir SeasonHistoryEntry del year que acaba de terminar ===
+  let playoffsResult = state.currentPlayoffsResult;
+  let userPlayoffExitRound: PlayoffRound | 'champion' | null = null;
+  let championshipsWonDelta = 0;
+  let superBowlAppearancesDelta = 0;
+  let careerPlayoffStatsDelta = state.careerPlayoffStats;
+  
+  if (state.inPlayoffs && playoffsResult) {
+    userPlayoffExitRound = playoffsResult.userPlayoffExitRound;
+    if (userPlayoffExitRound === 'champion') {
+      championshipsWonDelta = 1;
+      superBowlAppearancesDelta = 1;
+    } else if (userPlayoffExitRound === 'championship') {
+      superBowlAppearancesDelta = 1;
+    }
+    
+    // Acumular stats de playoffs
+    careerPlayoffStatsDelta = addStats(state.careerPlayoffStats, playoffsResult.playerPlayoffStats);
+  }
+  
+  // Construir history entry
+  const teamStandings = state.currentSeasonResult!.finalStandings.find(s => s.teamId === state.currentTeamId);
+  if (!teamStandings) {
+    throw new Error(`User team standings not found for ${state.currentTeamId}`);
+  }
+  
+  // === progressPlayer (avanza age + atributos) ===
+  const progressionRng = new SeededRandom(state.rngSeed).derive(`progression-y${state.currentYear}`);
+  const progResult = progressPlayer(state.currentPlayer, { rng: progressionRng });
+  const progressedPlayer = progResult.player;
+  
+  // === ageLeague (drift de team ratings) ===
+  const leagueRng = new SeededRandom(state.rngSeed).derive(`league-aging-y${state.currentYear}`);
+  const newTeams = structuredClone(state.currentTeams);
+  ageLeagueInternal(newTeams, leagueRng);
+  
+  // === actualizar peakOverall ===
+  const newPeakOverall = Math.max(state.peakOverall, progressedPlayer.overall);
+  
+  // === acumular careerRegularStats ===
+  const newCareerRegularStats = addStats(state.careerRegularStats, state.currentSeasonResult!.playerSeasonStats);
+  
+  // === acumular recentStatsHistory ===
+  const newRecentStatsHistory = [...state.recentStatsHistory, state.currentSeasonResult!.playerSeasonStats];
+  
+  // === CONSTRUIR HISTORY ENTRY ===
+  const playoffStatsForHistory = state.inPlayoffs && playoffsResult 
+    ? playoffsResult.playerPlayoffStats 
+    : emptyPlayerSeasonStats(state.currentPlayer.id);
+    
+  const historyEntryFinal: SeasonHistoryEntry = {
+    year: state.currentYear,
+    ageAtSeason: state.currentPlayer.age,
+    ovrAtStart: state.ovrAtStartOfCurrentYear,
+    ovrAtEnd: state.currentPlayer.overall,
+    teamId: state.currentTeamId,
+    regularSeasonRecord: {
+      wins: teamStandings.wins,
+      losses: teamStandings.losses,
+      ties: teamStandings.ties
+    },
+    madePlayoffs: state.inPlayoffs,
+    playoffExitRound: userPlayoffExitRound,
+    regularSeasonStats: state.currentSeasonResult!.playerSeasonStats,
+    playoffStats: playoffStatsForHistory,
+    championOfLeague: userPlayoffExitRound === 'champion',
+    leagueChampionTeamId: playoffsResult ? playoffsResult.champion : '',
+    leagueRunnerUpTeamId: playoffsResult ? playoffsResult.runnerUp : ''
+  };
+  
+  // === retornar nuevo state con todo aplicado ===
+  return {
+    ...state,
+    phase: 'preseason',
+    currentYear: state.currentYear + 1,
+    yearsPlayed: state.yearsPlayed + 1,
+    currentPlayer: progressedPlayer,
+    currentTeams: newTeams,
+    peakOverall: newPeakOverall,
+    
+    // Reset de campos year-specific
+    currentSchedule: null,
+    gamesPlayedThisYear: 0,
+    currentGameIndex: 0,
+    currentSeasonResult: null,
+    currentPlayoffsResult: null,
+    inPlayoffs: false,
+    userRegularGamesQueue: [],
+    currentRegularGameIndex: 0,
+    userPlayoffGamesQueue: [],
+    currentPlayoffGameIndex: 0,
+    
+    // Acumular history
+    history: [...state.history, historyEntryFinal],
+    careerRegularStats: newCareerRegularStats,
+    careerPlayoffStats: careerPlayoffStatsDelta,
+    championshipsWon: state.championshipsWon + championshipsWonDelta,
+    superBowlAppearances: state.superBowlAppearances + superBowlAppearancesDelta,
+    recentStatsHistory: newRecentStatsHistory,
+    
+    // ovrAtStartOfCurrentYear ahora es el OVR del nuevo year
+    ovrAtStartOfCurrentYear: progressedPlayer.overall
+  };
 }
 
 /**
@@ -536,5 +758,59 @@ export function finalizeCareer(state: CareerState): CareerResult {
     wealthHistory: state.wealthHistory,
     userDraftPick: state.userDraftPick
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS INTERNOS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function addStats(a: PlayerSeasonStats, b: PlayerSeasonStats): PlayerSeasonStats {
+  return {
+    playerId: a.playerId,
+    gamesPlayed: a.gamesPlayed + b.gamesPlayed,
+    passYards: a.passYards + b.passYards,
+    passTDs: a.passTDs + b.passTDs,
+    interceptions: a.interceptions + b.interceptions,
+    completions: a.completions + b.completions,
+    passAttempts: a.passAttempts + b.passAttempts,
+    rushYards: a.rushYards + b.rushYards,
+    rushTDs: a.rushTDs + b.rushTDs,
+    carries: a.carries + b.carries,
+    fumbles: a.fumbles + b.fumbles,
+    receivingYards: a.receivingYards + b.receivingYards,
+    receivingTDs: a.receivingTDs + b.receivingTDs,
+    receptions: a.receptions + b.receptions,
+    targets: a.targets + b.targets
+  };
+}
+
+function emptyPlayerSeasonStats(playerId: string): PlayerSeasonStats {
+  return {
+    playerId,
+    gamesPlayed: 0, passYards: 0, passTDs: 0, interceptions: 0,
+    completions: 0, passAttempts: 0, rushYards: 0, rushTDs: 0,
+    carries: 0, fumbles: 0, receivingYards: 0, receivingTDs: 0,
+    receptions: 0, targets: 0
+  };
+}
+
+function ageLeagueInternal(teams: Team[], rng: SeededRandom): void {
+  const LEAGUE_MEAN_RATING = 70;
+  const REVERSION_STRENGTH = 0.05;
+  
+  for (const team of teams) {
+    const offDistance = team.offenseRating - LEAGUE_MEAN_RATING;
+    const defDistance = team.defenseRating - LEAGUE_MEAN_RATING;
+    const offReversion = -offDistance * REVERSION_STRENGTH;
+    const defReversion = -defDistance * REVERSION_STRENGTH;
+    const offNoise = rng.randomInt(-3, 3);
+    const defNoise = rng.randomInt(-3, 3);
+    team.offenseRating = clampRating(Math.round(team.offenseRating + offReversion + offNoise));
+    team.defenseRating = clampRating(Math.round(team.defenseRating + defReversion + defNoise));
+  }
+}
+
+function clampRating(val: number): number {
+  return Math.max(40, Math.min(99, val));
 }
 

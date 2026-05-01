@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { loadTeams } from '../src/data/loadTeams';
 import { createPlayer } from '../src/engine/player';
 import { SeededRandom } from '../src/engine/prng';
-import { initializeCareer, isCareerOver, finalizeCareer, simulateNextGame, CareerState } from '../src/engine/careerStep';
+import { 
+  initializeCareer, isCareerOver, finalizeCareer, simulateNextGame, 
+  processOffseasonContracts, processOffseasonWealth, startNextYear,
+  CareerState 
+} from '../src/engine/careerStep';
 
 describe('initializeCareer', () => {
   it('crea CareerState con phase preseason', () => {
@@ -206,5 +210,162 @@ describe('simulateNextGame - regular season', () => {
       retirementReason: 'forced_max_age'
     };
     expect(() => simulateNextGame(retiredState)).toThrow(/retired/);
+  });
+});
+
+describe('processOffseasonContracts', () => {
+  const teams = loadTeams();
+  const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
+  
+  it('throws si phase no es offseason_contracts', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    expect(() => processOffseasonContracts(state, null)).toThrow(/offseason_contracts/);
+  });
+
+  it('decision válida = transición a offseason_wealth', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    // Forzar phase y contrato a punto de expirar (1 año restante -> 0 al procesar)
+    const expiredContract = { ...state.currentContract, yearsRemaining: 1 };
+    const offseasonInState: CareerState = { ...state, phase: 'offseason_contracts', currentContract: expiredContract };
+    
+    // Simular oferta (decision)
+    const offer = {
+      teamId: teams[1].id,
+      salaryPerYear: 5000000,
+      years: 3,
+      guaranteedTotal: 0,
+      signingBonus: 0,
+      isRookieContract: false,
+      isCurrentTeam: false,
+      isContender: false,
+      isExtension: false
+    };
+    
+    const newState = processOffseasonContracts(offseasonInState, offer);
+    expect(newState.phase).toBe('offseason_wealth');
+    expect(newState.currentContract.teamId).toBe(teams[1].id);
+    expect(newState.currentTeamId).toBe(teams[1].id);
+  });
+
+  it('decision null + contrato expirado = retired by no_market', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    // Forzar contrato a punto de expirar (1 año restante -> 0 al procesar)
+    const expiredContract = { ...state.currentContract, yearsRemaining: 1 };
+    const offseasonInState: CareerState = { ...state, phase: 'offseason_contracts', currentContract: expiredContract };
+    
+    const newState = processOffseasonContracts(offseasonInState, null);
+    expect(newState.phase).toBe('retired');
+    expect(newState.retirementReason).toBe('no_market');
+  });
+});
+
+describe('processOffseasonWealth', () => {
+  const teams = loadTeams();
+  const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
+
+  it('throws si phase no es offseason_wealth', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    expect(() => processOffseasonWealth(state, { buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] })).toThrow(/offseason_wealth/);
+  });
+
+  it('decisions vacías = transición a offseason_ready', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    const wealthInState: CareerState = { ...state, phase: 'offseason_wealth' };
+    
+    const newState = processOffseasonWealth(wealthInState, { buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] });
+    expect(newState.phase).toBe('offseason_ready');
+  });
+
+  it('forced_max_age = retired automático', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    // Forzar edad 42 para QB
+    const oldPlayer = { ...state.currentPlayer, age: 42 };
+    const wealthInState: CareerState = { ...state, phase: 'offseason_wealth', currentPlayer: oldPlayer };
+    
+    const newState = processOffseasonWealth(wealthInState, { buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] });
+    expect(newState.phase).toBe('retired');
+    expect(newState.retirementReason).toBe('forced_max_age');
+  });
+});
+
+describe('startNextYear', () => {
+  const teams = loadTeams();
+  const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
+
+  it('throws si phase no es offseason_ready', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    expect(() => startNextYear(state)).toThrow(/offseason_ready/);
+  });
+
+  it('avanza año, age, peakOverall, history', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    
+    // Necesitamos simular una temporada para tener currentSeasonResult (requerido por startNextYear)
+    const { state: seasonState } = simulateNextGame(state); // preseason -> regular_season
+    // Forzar fin de temporada simulando los 17 juegos sería largo, vamos a inyectar un SeasonResult mínimo
+    const readyState: CareerState = { 
+      ...seasonState, 
+      phase: 'offseason_ready',
+      currentSeasonResult: seasonState.currentSeasonResult 
+    };
+    
+    const initialAge = readyState.currentPlayer.age;
+    const initialYear = readyState.currentYear;
+    
+    const newState = startNextYear(readyState);
+    
+    expect(newState.phase).toBe('preseason');
+    expect(newState.currentYear).toBe(initialYear + 1);
+    expect(newState.yearsPlayed).toBe(1);
+    expect(newState.currentPlayer.age).toBe(initialAge + 1);
+    expect(newState.history.length).toBe(1);
+    expect(newState.history[0].year).toBe(initialYear);
+  });
+
+  it('reset de campos year-specific', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    const { state: seasonState } = simulateNextGame(state);
+    
+    const readyState: CareerState = { 
+      ...seasonState, 
+      phase: 'offseason_ready',
+      currentSchedule: seasonState.currentSchedule,
+      gamesPlayedThisYear: 17
+    };
+    
+    const newState = startNextYear(readyState);
+    
+    expect(newState.currentSchedule).toBeNull();
+    expect(newState.gamesPlayedThisYear).toBe(0);
+    expect(newState.currentGameIndex).toBe(0);
+    expect(newState.userRegularGamesQueue).toEqual([]);
+    expect(newState.currentSeasonResult).toBeNull();
   });
 });
