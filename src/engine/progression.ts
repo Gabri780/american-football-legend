@@ -35,6 +35,16 @@ function getBasePoints(rng: SeededRandom, age: number, position: Position): numb
 }
 
 /**
+ * Returns a factor based on longevity to modulate aging decline.
+ */
+function getLongevityFactor(longevity: number): number {
+  if (longevity >= 90) return 0.7; // Ages well
+  if (longevity >= 70) return 1.0; // Normal
+  if (longevity >= 60) return 1.2; // Ages somewhat fast
+  return 1.5; // Ages poorly
+}
+
+/**
  * Simulates a year of progression/decline for a player.
  */
 export function progressPlayer(player: Player, options: { rng?: SeededRandom } = {}): ProgressionResult {
@@ -49,7 +59,7 @@ export function progressPlayer(player: Player, options: { rng?: SeededRandom } =
   
   let finalPoints = basePoints > 0 
     ? Math.round(basePoints * workEthicMultiplier)
-    : Math.round(basePoints / workEthicMultiplier);
+    : Math.round((basePoints / workEthicMultiplier) * getLongevityFactor(player.longevity));
 
   // Hard cap: No growth if already at or above potential
   if (player.overall >= player.potential && finalPoints > 0) {

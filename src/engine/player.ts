@@ -74,6 +74,7 @@ export interface Player {
 
   // Potential & Meta
   potential: number;
+  longevity: number;
   scoutingLevel: number;
   overall: number;
 
@@ -203,6 +204,11 @@ export function createPlayer(params: CreatePlayerOptions): Player {
     potential = rng.randomInt(50, 80);
   }
 
+  // 3.1 Longevity (new attribute)
+  const longevityRng = rng.derive('longevity');
+  const z = longevityRng.randomNormal();
+  const longevity = Math.round(Math.max(40, Math.min(99, 70 + z * 10)));
+
   // 4. Age and Physique
   const age = options.ageOverride || rng.randomInt(21, 23);
   
@@ -238,6 +244,7 @@ export function createPlayer(params: CreatePlayerOptions): Player {
     workEthic: genAttr('workEthic'),
 
     potential,
+    longevity,
     scoutingLevel: tier === 'user' ? 100 : 0,
     freshness: 100,
     morale: 80,

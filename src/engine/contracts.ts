@@ -57,7 +57,7 @@ export interface ContractsHistory {
 export function generateRookieContract(player: Player, teamId: string, year: number, rng: SeededRandom): Contract {
   const ovr = player.overall;
   let years: number, salaryRange: [number, number], guaranteedPct: number;
-  
+
   if (ovr >= 80) {
     // Round 1
     years = 4;
@@ -84,11 +84,11 @@ export function generateRookieContract(player: Player, teamId: string, year: num
     salaryRange = [1, 2];
     guaranteedPct = 0.0;
   }
-  
+
   const salaryTotal = rng.random() * (salaryRange[1] - salaryRange[0]) + salaryRange[0];
   const guaranteedTotal = salaryTotal * guaranteedPct;
   const signingBonus = guaranteedTotal * 0.3;  // ~30% del garantizado va como bonus de firma
-  
+
   return {
     teamId,
     yearsTotal: years,
@@ -105,29 +105,30 @@ export function generateRookieContract(player: Player, teamId: string, year: num
 export function computeMarketScore(player: Player, recentStats: PlayerSeasonStats[], yearsPlayed: number): number {
   // OVR component (50%)
   const ovrComponent = player.overall * 0.50;
-  
+
   // Performance recent component (30%) — based on last 1-2 seasons stats
   const performanceComponent = computePerformanceScore(player.position, recentStats) * 0.30;
-  
+
   // Age component (20%)
   const age = player.age;
   let ageScore: number;
   if (age <= 26) ageScore = 100;
-  else if (age <= 29) ageScore = 95;
-  else if (age <= 31) ageScore = 80;
-  else if (age <= 33) ageScore = 60;
-  else ageScore = 40;
+  else if (age <= 29) ageScore = 90;
+  else if (age <= 31) ageScore = 70;
+  else if (age <= 33) ageScore = 40;
+  else if (age <= 35) ageScore = 20;
+  else ageScore = 5;
   const ageComponent = ageScore * 0.20;
-  
+
   return ovrComponent + performanceComponent + ageComponent;
 }
 
 export function computePerformanceScore(position: string, recentStats: PlayerSeasonStats[]): number {
   if (recentStats.length === 0) return 50; // neutral si no hay historia
-  
+
   // Promediar últimas 2 temporadas
   const lastN = recentStats.slice(-2);
-  
+
   if (position === 'QB') {
     // Bench marks NFL: élite 4500yd / 35TD = 100, regular 3500/22 = 70, malo 2500/15 = 40
     const avgYards = lastN.reduce((s, x) => s + x.passYards, 0) / lastN.length;
@@ -136,7 +137,7 @@ export function computePerformanceScore(position: string, recentStats: PlayerSea
     const tdsScore = Math.min(100, (avgTDs / 35) * 100);
     return (yardsScore + tdsScore) / 2;
   }
-  
+
   if (position === 'RB') {
     // Bench: élite 1500yd rush / 15TD = 100
     const avgYards = lastN.reduce((s, x) => s + x.rushYards, 0) / lastN.length;
@@ -145,7 +146,7 @@ export function computePerformanceScore(position: string, recentStats: PlayerSea
     const tdsScore = Math.min(100, (avgTDs / 15) * 100);
     return (yardsScore + tdsScore) / 2;
   }
-  
+
   if (position === 'WR') {
     // Bench: élite 1500 rec yards / 12 TDs = 100
     const avgYards = lastN.reduce((s, x) => s + x.receivingYards, 0) / lastN.length;
@@ -154,7 +155,7 @@ export function computePerformanceScore(position: string, recentStats: PlayerSea
     const tdsScore = Math.min(100, (avgTDs / 12) * 100);
     return (yardsScore + tdsScore) / 2;
   }
-  
+
   return 50;
 }
 
@@ -173,7 +174,7 @@ export function generateOffers(
   let salaryRange: [number, number];
   let yearsRange: [number, number];
   let guaranteedPctRange: [number, number];
-  
+
   if (marketScore >= 90) {
     numOffers = rng.randomInt(5, 7);
     salaryRange = [40, 60];
@@ -190,53 +191,66 @@ export function generateOffers(
     yearsRange = [3, 4];
     guaranteedPctRange = [0.3, 0.5];
   } else if (marketScore >= 60) {
-    numOffers = rng.randomInt(2, 4);
-    salaryRange = [4, 12];
-    yearsRange = [2, 3];
-    guaranteedPctRange = [0.15, 0.3];
-  } else {
     numOffers = rng.randomInt(1, 2);
-    salaryRange = [1, 3];
+    salaryRange = [0.5, 2];
     yearsRange = [1, 2];
-    guaranteedPctRange = [0.0, 0.1];
+    guaranteedPctRange = [0.0, 0.15];
+  } else if (marketScore >= 50) {
+    // NUEVO bracket: 60% chance de UNA oferta minimum, 40% chance de NINGUNA
+    numOffers = rng.random() < 0.6 ? 1 : 0;
+    salaryRange = [0.5, 1.5];
+    yearsRange = [1, 1];
+    guaranteedPctRange = [0.0, 0.05];
+  } else {
+    // marketScore < 50: NINGUNA oferta. Mercado vacío.
+    numOffers = 0;
+    salaryRange = [0, 0];
+    yearsRange = [0, 0];
+    guaranteedPctRange = [0, 0];
   }
-  
+
   // Si fue cortado, mercado castigado: -1 oferta, salarios -20%
   if (wasJustCut) {
     numOffers = Math.max(1, numOffers - 1);
     salaryRange = [salaryRange[0] * 0.8, salaryRange[1] * 0.8];
   }
-  
+
   // Si es extensión: solo 1 oferta del equipo actual
   if (isExtension) {
     numOffers = 1;
   }
-  
+
+  // NUEVO: si numOffers terminó en 0, devolver array vacío inmediatamente.
+  // El callback recibirá [] y deberá devolver null.
+  if (numOffers === 0) {
+    return [];
+  }
+
   const offers: ContractOffer[] = [];
   const usedTeamIds = new Set<string>();
-  
+
   // Si NO es extensión, garantizar que el equipo actual está en las ofertas
   if (!isExtension && !wasJustCut) {
     offers.push(makeOffer(currentContract.teamId, salaryRange, yearsRange, guaranteedPctRange, true, recentTeamRecords.get(currentContract.teamId) ?? 8, false, rng));
     usedTeamIds.add(currentContract.teamId);
   }
-  
+
   // Si es extensión, solo 1 del current team
   if (isExtension) {
     offers.push(makeOffer(currentContract.teamId, salaryRange, yearsRange, guaranteedPctRange, true, recentTeamRecords.get(currentContract.teamId) ?? 8, true, rng));
     return offers;
   }
-  
+
   // Generar resto de ofertas de equipos aleatorios
   while (offers.length < numOffers) {
     const team = teams[rng.randomInt(0, teams.length - 1)];
     if (usedTeamIds.has(team.id)) continue;
     usedTeamIds.add(team.id);
-    
+
     const teamRecord = recentTeamRecords.get(team.id) ?? 8;
     offers.push(makeOffer(team.id, salaryRange, yearsRange, guaranteedPctRange, false, teamRecord, false, rng));
   }
-  
+
   return offers;
 }
 
@@ -256,7 +270,7 @@ export function makeOffer(
   const guaranteedPct = rng.random() * (guaranteedPctRange[1] - guaranteedPctRange[0]) + guaranteedPctRange[0];
   const guaranteedTotal = totalValue * guaranteedPct;
   const signingBonus = guaranteedTotal * 0.3;
-  
+
   return {
     teamId,
     years,
@@ -271,14 +285,14 @@ export function makeOffer(
 
 export function shouldTeamCut(player: Player, contract: Contract, rng: SeededRandom): boolean {
   // Solo se puede cortar si quedan años no garantizados
-  const nonGuaranteedYears = contract.yearsRemaining - 
+  const nonGuaranteedYears = contract.yearsRemaining -
     (contract.guaranteedRemaining / contract.salaryPerYear);
   if (nonGuaranteedYears <= 0) return false;
-  
+
   // Cut probability: a más sueldo y menos OVR, más probable
   const expectedOVR = contract.salaryPerYear * 0.5 + 60;  // $20M → expect OVR 70, $40M → expect OVR 80
   const ovrGap = expectedOVR - player.overall;
-  
+
   if (ovrGap <= 0) return false; // performing arriba de expectativa, NO cut
   if (ovrGap < 5) return rng.random() < 0.10;   // ligero gap, 10% cut
   if (ovrGap < 10) return rng.random() < 0.30;  // medio gap, 30% cut
@@ -289,19 +303,19 @@ export function shouldTeamCut(player: Player, contract: Contract, rng: SeededRan
 export function teamOffersExtension(player: Player, contract: Contract, marketScore: number, rng: SeededRandom): boolean {
   // Solo si quedan 1-2 años de contrato
   if (contract.yearsRemaining > 2 || contract.yearsRemaining < 1) return false;
-  
+
   // Probabilidad basada en market score:
   // - >=90: 70% chance equipo ofrece extensión (jugador élite)
   // - 80-89: 50%
   // - 70-79: 30%
   // - <70: 10%
-  
+
   let prob: number;
   if (marketScore >= 90) prob = 0.70;
   else if (marketScore >= 80) prob = 0.50;
   else if (marketScore >= 70) prob = 0.30;
   else prob = 0.10;
-  
+
   return rng.random() < prob;
 }
 
