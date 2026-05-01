@@ -4,8 +4,8 @@ import { SeededRandom } from './prng';
 import { Schedule, PlayerSeasonStats, SeasonResult } from './season';
 import { Game } from './game';
 import { PlayoffsResult } from './playoffs';
-import { Contract, ContractsHistory, ContractOffer, FreeAgencyContext } from './contracts';
-import { WealthState, WealthHistory, WealthDecisions } from './wealth';
+import { Contract, ContractsHistory, ContractOffer, FreeAgencyContext, generateRookieContract } from './contracts';
+import { WealthState, WealthHistory, WealthDecisions, initializeWealth } from './wealth';
 import { CareerResult, RetirementReason, SeasonHistoryEntry } from './career';
 
 /**
@@ -140,7 +140,114 @@ export function initializeCareer(params: {
   startYear: number;
   rngSeed: string;
 }): CareerState {
-  throw new Error('Not implemented yet — Phase 2');
+  const { teams, userPlayer, userTeamId, startYear, rngSeed } = params;
+  
+  // 1. Validaciones (igual que simulateCareer)
+  if (!teams.find(t => t.id === userTeamId)) {
+    throw new Error(`userTeamId ${userTeamId} not found in teams array.`);
+  }
+  if (userPlayer.position !== 'QB' && userPlayer.position !== 'RB' && userPlayer.position !== 'WR') {
+    throw new Error(`userPlayer.position must be QB, RB, or WR. Got ${userPlayer.position}.`);
+  }
+  
+  // 2. Calcular draft pick (replica calculateUserDraftPick de career.ts)
+  const sorted = [...teams].sort((a, b) => {
+    const combinedA = a.offenseRating + a.defenseRating;
+    const combinedB = b.offenseRating + b.defenseRating;
+    if (combinedA !== combinedB) return combinedA - combinedB;
+    return a.id.localeCompare(b.id);
+  });
+  const pickIndex = sorted.findIndex(t => t.id === userTeamId);
+  if (pickIndex === -1) {
+    throw new Error(`userTeamId ${userTeamId} not found when calculating draft pick`);
+  }
+  const userDraftPick = pickIndex + 1;
+  
+  // 3. Snapshots inmutables
+  const playerAtStart = structuredClone(userPlayer);
+  const currentPlayer = structuredClone(userPlayer);
+  const currentTeams = structuredClone(teams);
+  
+  // 4. Stats vacías para acumular
+  const emptyStats: PlayerSeasonStats = {
+    playerId: userPlayer.id,
+    gamesPlayed: 0, passYards: 0, passTDs: 0, interceptions: 0,
+    completions: 0, passAttempts: 0, rushYards: 0, rushTDs: 0,
+    carries: 0, fumbles: 0, receivingYards: 0, receivingTDs: 0,
+    receptions: 0, targets: 0
+  };
+  
+  // 5. RNG raíz para derivar sub-rngs
+  const rng = new SeededRandom(rngSeed);
+  
+  // 6. Rookie contract
+  const rookieRng = rng.derive('rookie-contract');
+  const currentContract = generateRookieContract(currentPlayer, userTeamId, startYear, rookieRng);
+  
+  // 7. ContractsHistory inicial con evento rookie_signed
+  const contractsHistory: ContractsHistory = {
+    events: [{
+      year: startYear,
+      type: 'rookie_signed',
+      newTeamId: userTeamId,
+      contractValue: currentContract.salaryPerYear * currentContract.yearsTotal,
+      yearsTotal: currentContract.yearsTotal,
+      guaranteedTotal: currentContract.guaranteedTotal
+    }],
+    totalEarnings: 0
+  };
+  
+  // 8. Wealth inicial
+  const wealthRng = rng.derive('wealth-init');
+  const wealthState = initializeWealth(userTeamId, wealthRng);
+  const wealthHistory: WealthHistory = { events: [] };
+  
+  // 9. Construir CareerState inicial
+  return {
+    phase: 'preseason',
+    
+    startYear,
+    currentYear: startYear,
+    yearsPlayed: 0,
+    
+    currentTeams,
+    
+    currentPlayer,
+    playerAtStart,
+    peakOverall: currentPlayer.overall,
+    
+    currentTeamId: userTeamId,
+    
+    currentSchedule: null,
+    gamesPlayedThisYear: 0,
+    currentGameIndex: 0,
+    currentSeasonResult: null,
+    currentPlayoffsResult: null,
+    inPlayoffs: false,
+    
+    history: [],
+    careerRegularStats: { ...emptyStats },
+    careerPlayoffStats: { ...emptyStats },
+    championshipsWon: 0,
+    superBowlAppearances: 0,
+    
+    currentContract,
+    contractsHistory,
+    pendingContractOffers: null,
+    pendingContractContext: null,
+    
+    wealthState,
+    wealthHistory,
+    
+    userDraftPick,
+    
+    recentStatsHistory: [],
+    
+    retirementReason: null,
+    
+    rngSeed,
+    rngStepCount: 0  // por ahora 0; en Fase 2.2 se incrementará al simular games
+  };
 }
 
 /**
@@ -219,5 +326,29 @@ export function isCareerOver(state: CareerState): boolean {
  * Solo válido si state.phase === 'retired'.
  */
 export function finalizeCareer(state: CareerState): CareerResult {
-  throw new Error('Not implemented yet — Phase 2');
+  if (state.phase !== 'retired') {
+    throw new Error(`finalizeCareer requires phase === 'retired', got '${state.phase}'`);
+  }
+  if (state.retirementReason === null) {
+    throw new Error(`finalizeCareer requires retirementReason set, got null`);
+  }
+  
+  return {
+    playerAtStart: state.playerAtStart,
+    playerAtEnd: state.currentPlayer,
+    startYear: state.startYear,
+    endYear: state.startYear + state.yearsPlayed,
+    yearsPlayed: state.yearsPlayed,
+    retirementReason: state.retirementReason,
+    peakOverall: state.peakOverall,
+    history: state.history,
+    careerRegularStats: state.careerRegularStats,
+    careerPlayoffStats: state.careerPlayoffStats,
+    championshipsWon: state.championshipsWon,
+    superBowlAppearances: state.superBowlAppearances,
+    contractsHistory: state.contractsHistory,
+    wealthState: state.wealthState,
+    wealthHistory: state.wealthHistory,
+    userDraftPick: state.userDraftPick
+  };
 }
