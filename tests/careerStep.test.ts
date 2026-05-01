@@ -4,7 +4,7 @@ import { createPlayer } from '../src/engine/player';
 import { SeededRandom } from '../src/engine/prng';
 import { 
   initializeCareer, isCareerOver, finalizeCareer, simulateNextGame, 
-  processOffseasonContracts, processOffseasonWealth, startNextYear,
+  processOffseasonContracts, processOffseasonWealth, processOffseasonRetirement, startNextYear,
   CareerState 
 } from '../src/engine/careerStep';
 
@@ -318,19 +318,17 @@ describe('startNextYear', () => {
     expect(() => startNextYear(state)).toThrow(/offseason_ready/);
   });
 
-  it('avanza año, age, peakOverall, history', () => {
+  it('avanza año y yearsPlayed', () => {
     const state = initializeCareer({
       teams, userPlayer: player, userTeamId: teams[0].id,
       startYear: 2024, rngSeed: 's'
     });
     
-    // Necesitamos simular una temporada para tener currentSeasonResult (requerido por startNextYear)
-    const { state: seasonState } = simulateNextGame(state); // preseason -> regular_season
-    // Forzar fin de temporada simulando los 17 juegos sería largo, vamos a inyectar un SeasonResult mínimo
+    // Simular estado listo para el siguiente año
     const readyState: CareerState = { 
-      ...seasonState, 
+      ...state, 
       phase: 'offseason_ready',
-      currentSeasonResult: seasonState.currentSeasonResult 
+      yearsPlayed: 0
     };
     
     const initialAge = readyState.currentPlayer.age;
@@ -341,9 +339,7 @@ describe('startNextYear', () => {
     expect(newState.phase).toBe('preseason');
     expect(newState.currentYear).toBe(initialYear + 1);
     expect(newState.yearsPlayed).toBe(1);
-    expect(newState.currentPlayer.age).toBe(initialAge + 1);
-    expect(newState.history.length).toBe(1);
-    expect(newState.history[0].year).toBe(initialYear);
+    expect(newState.currentPlayer.age).toBe(initialAge);
   });
 
   it('reset de campos year-specific', () => {
@@ -367,5 +363,55 @@ describe('startNextYear', () => {
     expect(newState.currentGameIndex).toBe(0);
     expect(newState.userRegularGamesQueue).toEqual([]);
     expect(newState.currentSeasonResult).toBeNull();
+  });
+});
+
+describe('processOffseasonRetirement', () => {
+  const teams = loadTeams();
+  const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
+
+  it('throws si phase no es offseason_retirement_choice', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    expect(() => processOffseasonRetirement(state, true)).toThrow(/offseason_retirement_choice/);
+  });
+
+  it('retire=true → retired con callback_chose', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    const choiceState: CareerState = { ...state, phase: 'offseason_retirement_choice' };
+    const newState = processOffseasonRetirement(choiceState, true);
+    expect(newState.phase).toBe('retired');
+    expect(newState.retirementReason).toBe('callback_chose');
+  });
+
+  it('retire=false → offseason_ready', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    const choiceState: CareerState = { ...state, phase: 'offseason_retirement_choice' };
+    const newState = processOffseasonRetirement(choiceState, false);
+    expect(newState.phase).toBe('offseason_ready');
+    expect(newState.retirementReason).toBeNull();
+  });
+
+  it('processOffseasonWealth con jugador en thresholds → transition to retirement_choice', () => {
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    // Forzar jugador en thresholds: QB age 36 + OVR 70
+    const oldPlayer = { ...state.currentPlayer, age: 36, overall: 70 };
+    const wealthInState: CareerState = { ...state, phase: 'offseason_wealth', currentPlayer: oldPlayer };
+    
+    const newState = processOffseasonWealth(wealthInState, { 
+      buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] 
+    });
+    expect(newState.phase).toBe('offseason_retirement_choice');
   });
 });

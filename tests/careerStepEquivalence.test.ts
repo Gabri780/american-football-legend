@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { loadTeams } from '../src/data/loadTeams';
 import { createPlayer } from '../src/engine/player';
 import { simulateCareer } from '../src/engine/career';
-import { initializeCareer, simulateNextGame, CareerState } from '../src/engine/careerStep';
+import { 
+  initializeCareer, simulateNextGame, CareerState,
+  processOffseasonContracts, processOffseasonWealth, processOffseasonRetirement, startNextYear, finalizeCareer 
+} from '../src/engine/careerStep';
 import { SeededRandom } from '../src/engine/prng';
 import { Game } from '../src/engine/game';
 
@@ -222,6 +225,119 @@ describe('Equivalencia simulateCareer vs simulateNextGame (year 0)', () => {
     const stepPlayoffGames = stepResult.games.length - 17; // games totales - 17 regular
     
     expect(stepPlayoffGames).toBe(expectedPlayoffGames);
+  });
+});
+
+describe('Equivalencia carrera completa multi-year', () => {
+  const teams = loadTeams();
+  
+  it('CareerResult final es idéntico entre simulateCareer y step-by-step', () => {
+    const SEED = 'full-equivalence-seed-1';
+    
+    // Setup idéntico para ambos caminos. Jugador VIEJO + OVR bajo para que se 
+    // retire por callback en pocos years (acelera test).
+    const playerA = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p-full'), options: { ageOverride: 36 } });
+    playerA.overall = 70;
+    const playerB = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p-full'), options: { ageOverride: 36 } });
+    playerB.overall = 70;
+    
+    const faCallback = () => null;
+    const wealthCallback = () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] });
+    const retireCallback = () => true;  // acepta retiro cuando se sugiere
+    
+    // === CAMINO A: simulateCareer original ===
+    const resultA = simulateCareer({
+      teams,
+      userPlayer: playerA,
+      userTeamId: teams[0].id,
+      startYear: 0,
+      retireDecisionCallback: retireCallback,
+      faCallback,
+      wealthCallback,
+      rng: new SeededRandom(SEED),
+      maxYears: 25
+    });
+    
+    // === CAMINO B: step-by-step ===
+    let state = initializeCareer({
+      teams,
+      userPlayer: playerB,
+      userTeamId: teams[0].id,
+      startYear: 0,
+      rngSeed: SEED
+    });
+    
+    let safetyCounter = 0;
+    while (state.phase !== 'retired') {
+      safetyCounter++;
+      if (safetyCounter > 1000) {
+        throw new Error(`Safety limit reached in step-by-step loop. Phase: ${state.phase}, Year: ${state.currentYear}`);
+      }
+      
+      if (state.phase === 'preseason' || state.phase === 'regular_season' || state.phase === 'playoffs') {
+        const r = simulateNextGame(state);
+        state = r.state;
+      } else if (state.phase === 'offseason_contracts') {
+        // Llamar al "callback" simulado: devolvemos null como faCallback
+        state = processOffseasonContracts(state, null);
+      } else if (state.phase === 'offseason_wealth') {
+        state = processOffseasonWealth(state, { 
+          buyPropertyIds: [], sellPropertyIds: [], 
+          buyVehicleIds: [], sellVehicleIds: [] 
+        });
+      } else if (state.phase === 'offseason_retirement_choice') {
+        // Replicar el callback del test original (retireCallback => true)
+        state = processOffseasonRetirement(state, true);
+      } else if (state.phase === 'offseason_ready') {
+        state = startNextYear(state);
+      } else {
+        throw new Error(`Unexpected phase: ${state.phase}`);
+      }
+    }
+    
+    const resultB = finalizeCareer(state);
+    
+    // === COMPARACIÓN ===
+    
+    expect(resultB.yearsPlayed).toBe(resultA.yearsPlayed);
+    expect(resultB.retirementReason).toBe(resultA.retirementReason);
+    expect(resultB.peakOverall).toBe(resultA.peakOverall);
+    expect(resultB.championshipsWon).toBe(resultA.championshipsWon);
+    expect(resultB.superBowlAppearances).toBe(resultA.superBowlAppearances);
+    expect(resultB.userDraftPick).toBe(resultA.userDraftPick);
+    expect(resultB.startYear).toBe(resultA.startYear);
+    expect(resultB.endYear).toBe(resultA.endYear);
+    
+    // Stats acumulados
+    expect(resultB.careerRegularStats.passYards).toBe(resultA.careerRegularStats.passYards);
+    expect(resultB.careerRegularStats.passTDs).toBe(resultA.careerRegularStats.passTDs);
+    expect(resultB.careerRegularStats.interceptions).toBe(resultA.careerRegularStats.interceptions);
+    expect(resultB.careerRegularStats.completions).toBe(resultA.careerRegularStats.completions);
+    expect(resultB.careerRegularStats.passAttempts).toBe(resultA.careerRegularStats.passAttempts);
+    expect(resultB.careerRegularStats.gamesPlayed).toBe(resultA.careerRegularStats.gamesPlayed);
+    
+    // History entries — comparar longitud y campos clave
+    expect(resultB.history.length).toBe(resultA.history.length);
+    for (let i = 0; i < resultA.history.length; i++) {
+      const hA = resultA.history[i];
+      const hB = resultB.history[i];
+      expect(hB.year).toBe(hA.year);
+      expect(hB.ageAtSeason).toBe(hA.ageAtSeason);
+      expect(hB.teamId).toBe(hA.teamId);
+      expect(hB.regularSeasonRecord.wins).toBe(hA.regularSeasonRecord.wins);
+      expect(hB.regularSeasonRecord.losses).toBe(hA.regularSeasonRecord.losses);
+      expect(hB.regularSeasonRecord.ties).toBe(hA.regularSeasonRecord.ties);
+      expect(hB.madePlayoffs).toBe(hA.madePlayoffs);
+      expect(hB.playoffExitRound).toBe(hA.playoffExitRound);
+    }
+    
+    // Player final
+    expect(resultB.playerAtEnd.overall).toBe(resultA.playerAtEnd.overall);
+    expect(resultB.playerAtEnd.age).toBe(resultA.playerAtEnd.age);
+    
+    // Contracts history
+    expect(resultB.contractsHistory.totalEarnings).toBe(resultA.contractsHistory.totalEarnings);
+    expect(resultB.contractsHistory.events.length).toBe(resultA.contractsHistory.events.length);
   });
 });
 
