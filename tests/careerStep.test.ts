@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { loadTeams } from '../src/data/loadTeams';
 import { createPlayer } from '../src/engine/player';
 import { SeededRandom } from '../src/engine/prng';
-import { initializeCareer, isCareerOver, finalizeCareer } from '../src/engine/careerStep';
+import { initializeCareer, isCareerOver, finalizeCareer, simulateNextGame, CareerState } from '../src/engine/careerStep';
 
 describe('initializeCareer', () => {
   it('crea CareerState con phase preseason', () => {
@@ -131,5 +131,80 @@ describe('finalizeCareer', () => {
     expect(result.retirementReason).toBe('forced_max_age');
     expect(result.userDraftPick).toBe(state.userDraftPick);
     expect(result.yearsPlayed).toBe(0);
+  });
+});
+
+describe('simulateNextGame - regular season', () => {
+  it('preseason transition genera schedule y pre-simula temporada', () => {
+    const teams = loadTeams();
+    const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
+    let state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 'sim-test'
+    });
+
+    const { state: newState, game } = simulateNextGame(state);
+    expect(newState.phase).toBe('regular_season');
+    expect(newState.currentSchedule).not.toBeNull();
+    expect(newState.userRegularGamesQueue.length).toBe(17);
+    expect(newState.gamesPlayedThisYear).toBe(1);
+    expect(newState.currentRegularGameIndex).toBe(1);
+    expect(game.homeTeamId === teams[0].id || game.awayTeamId === teams[0].id).toBe(true);
+  });
+
+  it('simula 17 games de regular season correctamente', () => {
+    const teams = loadTeams();
+    const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
+    let state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 'sim-17'
+    });
+
+    let lastGameResult;
+    for (let i = 0; i < 17; i++) {
+      const result = simulateNextGame(state);
+      state = result.state;
+      lastGameResult = result;
+    }
+
+    expect(state.gamesPlayedThisYear).toBe(17);
+    expect(lastGameResult!.isLastGameOfRegularSeason).toBe(true);
+    expect(['playoffs', 'offseason_contracts']).toContain(state.phase);
+  });
+
+  it('determinismo: mismo seed produce misma secuencia de games', () => {
+    const teams = loadTeams();
+    const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
+
+    function simY1(seed: string) {
+      let state = initializeCareer({
+        teams, userPlayer: player, userTeamId: teams[0].id,
+        startYear: 2024, rngSeed: seed
+      });
+      const games = [];
+      for (let i = 0; i < 5; i++) {
+        const r = simulateNextGame(state);
+        state = r.state;
+        games.push({ score: `${r.game.homeScore}-${r.game.awayScore}`, winner: r.game.winnerTeamId });
+      }
+      return games;
+    }
+
+    expect(simY1('det-test')).toEqual(simY1('det-test'));
+  });
+
+  it('throws si phase es retired', () => {
+    const teams = loadTeams();
+    const player = createPlayer({ position: 'QB', tier: 'user', rng: new SeededRandom('p') });
+    const state = initializeCareer({
+      teams, userPlayer: player, userTeamId: teams[0].id,
+      startYear: 2024, rngSeed: 's'
+    });
+    const retiredState: CareerState = {
+      ...state,
+      phase: 'retired',
+      retirementReason: 'forced_max_age'
+    };
+    expect(() => simulateNextGame(retiredState)).toThrow(/retired/);
   });
 });

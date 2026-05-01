@@ -1,12 +1,13 @@
 import { Player } from './player';
 import { Team } from './team';
 import { SeededRandom } from './prng';
-import { Schedule, PlayerSeasonStats, SeasonResult } from './season';
+import { Schedule, PlayerSeasonStats, SeasonResult, simulateSeason } from './season';
 import { Game } from './game';
-import { PlayoffsResult } from './playoffs';
+import { PlayoffsResult, simulatePlayoffs } from './playoffs';
 import { Contract, ContractsHistory, ContractOffer, FreeAgencyContext, generateRookieContract } from './contracts';
 import { WealthState, WealthHistory, WealthDecisions, initializeWealth } from './wealth';
 import { CareerResult, RetirementReason, SeasonHistoryEntry } from './career';
+import { generateSchedule } from './schedule';
 
 /**
  * Phase of the career flow. The motor enforces transitions:
@@ -52,10 +53,16 @@ export interface CareerState {
   currentSchedule: Schedule | null;       // null durante offseason
   gamesPlayedThisYear: number;            // 0 al inicio, hasta 17
   currentGameIndex: number;               // próximo game a simular en schedule.games
-  currentSeasonResult: SeasonResult | null;  // se llena durante regular_season
-  currentPlayoffsResult: PlayoffsResult | null;  // se llena durante playoffs
+  currentSeasonResult: SeasonResult | null;  // se llena al inicio de regular_season
+  currentPlayoffsResult: PlayoffsResult | null;  // se llena al inicio de playoffs
   inPlayoffs: boolean;                    // true si user clasificó este year
   
+  // Colas de juegos pre-simulados
+  userRegularGamesQueue: Game[];
+  currentRegularGameIndex: number;
+  userPlayoffGamesQueue: Game[];
+  currentPlayoffGameIndex: number;
+
   // Stats acumuladas de carrera
   history: SeasonHistoryEntry[];
   careerRegularStats: PlayerSeasonStats;
@@ -224,6 +231,11 @@ export function initializeCareer(params: {
     currentSeasonResult: null,
     currentPlayoffsResult: null,
     inPlayoffs: false,
+
+    userRegularGamesQueue: [],
+    currentRegularGameIndex: 0,
+    userPlayoffGamesQueue: [],
+    currentPlayoffGameIndex: 0,
     
     history: [],
     careerRegularStats: { ...emptyStats },
@@ -246,7 +258,7 @@ export function initializeCareer(params: {
     retirementReason: null,
     
     rngSeed,
-    rngStepCount: 0  // por ahora 0; en Fase 2.2 se incrementará al simular games
+    rngStepCount: 0 
   };
 }
 
@@ -255,20 +267,193 @@ export function initializeCareer(params: {
  * 
  * Solo válido en phases: 'preseason' (transiciona a 'regular_season' y simula game 1) 
  * o 'regular_season' o 'playoffs'.
- * 
- * Si era el último game de regular season y el equipo del usuario NO clasificó, 
- * el state final tiene phase 'offseason_contracts'.
- * 
- * Si era el último game de regular season y el equipo SÍ clasificó, transiciona 
- * a phase 'playoffs' y simula el primer playoff game.
- * 
- * Si era el último playoff game (eliminado o championship), transiciona a 
- * 'offseason_contracts'.
- * 
- * Throw si phase es offseason_* o retired.
  */
 export function simulateNextGame(state: CareerState): NextGameResult {
-  throw new Error('Not implemented yet — Phase 2');
+  // VALIDACIÓN
+  if (state.phase === 'retired') {
+    throw new Error('Cannot simulate game: career is retired');
+  }
+  if (state.phase === 'offseason_contracts' || 
+      state.phase === 'offseason_wealth' || 
+      state.phase === 'offseason_ready') {
+    throw new Error(`Cannot simulate game: phase is '${state.phase}'. Process offseason first.`);
+  }
+
+  // === RAMA 1: PRESEASON → REGULAR_SEASON ===
+  if (state.phase === 'preseason') {
+    // 1. Generar schedule
+    const scheduleRng = new SeededRandom(state.rngSeed).derive(`schedule-y${state.currentYear}`);
+    const schedule = generateSchedule(state.currentTeams, state.currentYear, scheduleRng);
+
+    // 2. Simular temporada completa (Consistencia con motor original)
+    const seasonRng = new SeededRandom(state.rngSeed).derive(`season-y${state.currentYear}`);
+    const seasonResult = simulateSeason({
+      teams: state.currentTeams,
+      schedule,
+      userPlayer: state.currentPlayer,
+      userTeamId: state.currentTeamId,
+      rng: seasonRng
+    });
+
+    // 3. Extraer 17 partidos del usuario
+    const userRegularGamesQueue: Game[] = [];
+    for (const week of seasonResult.weekSummaries) {
+      for (const gr of week.games) {
+        if (gr.userGame) {
+          userRegularGamesQueue.push(gr.userGame);
+        }
+      }
+    }
+
+    if (userRegularGamesQueue.length !== 17) {
+      throw new Error(`Expected 17 user games, found ${userRegularGamesQueue.length}`);
+    }
+
+    // 4. Actualizar state y devolver el primer game
+    const newState: CareerState = {
+      ...state,
+      phase: 'regular_season',
+      currentSchedule: schedule,
+      currentSeasonResult: seasonResult,
+      userRegularGamesQueue,
+      currentRegularGameIndex: 0
+    };
+
+    return serveRegularSeasonGame(newState);
+  }
+
+  // === RAMA 2: REGULAR_SEASON ===
+  if (state.phase === 'regular_season') {
+    return serveRegularSeasonGame(state);
+  }
+
+  // === RAMA 3: PLAYOFFS ===
+  if (state.phase === 'playoffs') {
+    return servePlayoffsGame(state);
+  }
+
+  throw new Error(`Unexpected phase: ${state.phase}`);
+}
+
+/**
+ * Helper para devolver el siguiente game de regular season de la cola.
+ */
+function serveRegularSeasonGame(state: CareerState): NextGameResult {
+  if (state.currentRegularGameIndex >= state.userRegularGamesQueue.length) {
+    throw new Error('No more regular season games in queue');
+  }
+
+  const game = state.userRegularGamesQueue[state.currentRegularGameIndex];
+  const isLastRegularGame = state.currentRegularGameIndex === 16;
+
+  // Actualizar stats de carrera (opcional, o se puede hacer al final del year)
+  // Por ahora lo dejamos igual que el motor original: se acumula al final del year.
+  // Pero la UI podría sumar game.userPlayerStats a un acumulador local.
+
+  if (!isLastRegularGame) {
+    return {
+      state: {
+        ...state,
+        currentRegularGameIndex: state.currentRegularGameIndex + 1,
+        gamesPlayedThisYear: state.gamesPlayedThisYear + 1
+      },
+      game,
+      isLastGameOfRegularSeason: false,
+      isLastPlayoffGame: false
+    };
+  }
+
+  // === ÚLTIMO PARTIDO: Decidir clasificación a Playoffs ===
+  if (!state.currentSeasonResult) throw new Error('Missing currentSeasonResult at end of season');
+
+  const playoffsRng = new SeededRandom(state.rngSeed).derive(`playoffs-y${state.currentYear}`);
+  const playoffsResult = simulatePlayoffs({
+    seasonResult: state.currentSeasonResult,
+    teams: state.currentTeams,
+    userPlayer: state.currentPlayer,
+    userTeamId: state.currentTeamId,
+    rng: playoffsRng
+  });
+
+  if (playoffsResult.userMadePlayoffs) {
+    // Extraer partidos del user en playoffs
+    const allPlayoffGames: Game[] = [];
+    if (playoffsResult.games.wildCard) allPlayoffGames.push(...playoffsResult.games.wildCard.map(pg => pg.game));
+    if (playoffsResult.games.divisional) allPlayoffGames.push(...playoffsResult.games.divisional.map(pg => pg.game));
+    if (playoffsResult.games.conferenceChampionship) allPlayoffGames.push(...playoffsResult.games.conferenceChampionship.map(pg => pg.game));
+    if (playoffsResult.games.championshipBowl) allPlayoffGames.push(playoffsResult.games.championshipBowl.game);
+
+    const userPlayoffGamesQueue = allPlayoffGames.filter(g => 
+      g.homeTeamId === state.currentTeamId || g.awayTeamId === state.currentTeamId
+    );
+
+    return {
+      state: {
+        ...state,
+        phase: 'playoffs',
+        inPlayoffs: true,
+        currentSeasonResult: state.currentSeasonResult,
+        currentPlayoffsResult: playoffsResult,
+        userPlayoffGamesQueue,
+        currentPlayoffGameIndex: 0,
+        currentRegularGameIndex: state.currentRegularGameIndex + 1,
+        gamesPlayedThisYear: state.gamesPlayedThisYear + 1
+      },
+      game,
+      isLastGameOfRegularSeason: true,
+      isLastPlayoffGame: false
+    };
+  } else {
+    // No clasificó
+    return {
+      state: {
+        ...state,
+        phase: 'offseason_contracts',
+        inPlayoffs: false,
+        currentRegularGameIndex: state.currentRegularGameIndex + 1,
+        gamesPlayedThisYear: state.gamesPlayedThisYear + 1
+      },
+      game,
+      isLastGameOfRegularSeason: true,
+      isLastPlayoffGame: false
+    };
+  }
+}
+
+/**
+ * Helper para devolver el siguiente game de playoffs de la cola.
+ */
+function servePlayoffsGame(state: CareerState): NextGameResult {
+  if (state.currentPlayoffGameIndex >= state.userPlayoffGamesQueue.length) {
+    throw new Error('No more playoff games in queue');
+  }
+
+  const game = state.userPlayoffGamesQueue[state.currentPlayoffGameIndex];
+  const isLastPlayoffGame = state.currentPlayoffGameIndex === (state.userPlayoffGamesQueue.length - 1);
+
+  if (!isLastPlayoffGame) {
+    return {
+      state: {
+        ...state,
+        currentPlayoffGameIndex: state.currentPlayoffGameIndex + 1
+      },
+      game,
+      isLastGameOfRegularSeason: false,
+      isLastPlayoffGame: false
+    };
+  }
+
+  // Transición a Offseason
+  return {
+    state: {
+      ...state,
+      phase: 'offseason_contracts',
+      currentPlayoffGameIndex: state.currentPlayoffGameIndex + 1
+    },
+    game,
+    isLastGameOfRegularSeason: false,
+    isLastPlayoffGame: true
+  };
 }
 
 /**
@@ -352,3 +537,4 @@ export function finalizeCareer(state: CareerState): CareerResult {
     userDraftPick: state.userDraftPick
   };
 }
+
