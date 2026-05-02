@@ -10,27 +10,27 @@ const N_CAREERS = 100;
 
 const faCallback: FreeAgencyDecisionCallback = (offers, ctx) => {
   if (offers.length === 0) return null;
-  
+
   // NUEVO: si player es veterano y todas las ofertas son humillantes, rechazar
   if (ctx.player.age >= 35) {
     const maxSalary = Math.max(...offers.map(o => o.salaryPerYear));
     if (maxSalary < 5) return null; // se retira antes que firmar por menos de $5M
   }
-  
+
   // resto de lógica existente intacta
   if (offers.length === 1 && offers[0].isExtension) return offers[0];
   if (ctx.player.age >= 33) {
     const contender = offers.find(o => o.isContender);
     if (contender) return contender;
   }
-  const sorted = [...offers].sort((a, b) => 
+  const sorted = [...offers].sort((a, b) =>
     (b.years * b.salaryPerYear) - (a.years * a.salaryPerYear)
   );
   return sorted[0];
 };
 
 const wealthCallback: WealthDecisionCallback = () => ({
-  buyPropertyIds: [], sellPropertyIds: [], 
+  buyPropertyIds: [], sellPropertyIds: [],
   buyVehicleIds: [], sellVehicleIds: []
 });
 
@@ -49,15 +49,15 @@ function runHealthcheck() {
     const playerSeed = `player-${i}`;
     const careerSeed = `career-${i}`;
     const teamSeed = `team-${i}`;
-    
+
     const userPlayer = createPlayer({
       rng: new SeededRandom(playerSeed),
       position: 'QB',
       tier: 'user'
     });
-    
+
     const initialTeamId = pickRandomTeamId(teams, teamSeed);
-    
+
     try {
       const result = simulateCareer({
         teams,
