@@ -10,7 +10,7 @@ import { CareerSummaryScreen } from './screens/CareerSummaryScreen';
 
 // Engine imports
 import { 
-  initializeCareer, simulateNextGame, processOffseasonRetirement, startNextYear,
+  initializeCareer, simulateNextGame, processOffseasonContracts, processOffseasonRetirement, startNextYear,
   CareerState 
 } from '../src/engine/careerStep';
 import { Game } from '../src/engine/game';
@@ -61,8 +61,14 @@ export default function App() {
 
     const phaseBeforeGame = careerState.phase;
     const { state: newState, game } = simulateNextGame(careerState);
+    let finalState = newState;
 
-    setCareerState(newState);
+    // Auto-avance si offseason_contracts entra en modo trámite
+    if (finalState.phase === 'offseason_contracts' && finalState.pendingContractContext === null) {
+      finalState = processOffseasonContracts(finalState, null);
+    }
+
+    setCareerState(finalState);
     setLastGameResult({ 
       game, 
       wasPlayoff: phaseBeforeGame === 'playoffs' 
@@ -128,6 +134,8 @@ export default function App() {
       {screen === 'contract' && careerState && (
         <ContractDecisionScreen
           careerState={careerState}
+          allTeams={careerState.currentTeams}
+          userTeam={careerState.currentTeams.find(t => t.id === careerState.currentTeamId)}
           onUpdateState={(newState) => {
             setCareerState(newState);
             setScreen('hub');
