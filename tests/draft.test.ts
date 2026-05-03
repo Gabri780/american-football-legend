@@ -14,7 +14,7 @@ describe('User draft pick', () => {
       userTeamId: teams[0].id,
       startYear: 0,
       retireDecisionCallback: (ctx) => ctx.player.age >= 38,
-      faCallback: (offers) => offers[0],
+      faCallback: (offers) => offers[0] ?? null,
       wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }),
       rng: new SeededRandom('career'),
       maxYears: 25
@@ -44,7 +44,7 @@ describe('User draft pick', () => {
       userTeamId: targetTeam.id,
       startYear: 0,
       retireDecisionCallback: (ctx) => ctx.player.age >= 38,
-      faCallback: (offers) => offers[0],
+      faCallback: (offers) => offers[0] ?? null,
       wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }),
       rng: new SeededRandom('career'),
       maxYears: 25
@@ -72,7 +72,7 @@ describe('User draft pick', () => {
       userTeamId: targetTeam.id,
       startYear: 0,
       retireDecisionCallback: (ctx) => ctx.player.age >= 38,
-      faCallback: (offers) => offers[0],
+      faCallback: (offers) => offers[0] ?? null,
       wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }),
       rng: new SeededRandom('career'),
       maxYears: 25
@@ -89,14 +89,14 @@ describe('User draft pick', () => {
     const r1 = simulateCareer({
       teams: teams1, userPlayer: player, userTeamId: teams1[0].id, startYear: 0,
       retireDecisionCallback: (ctx) => ctx.player.age >= 38,
-      faCallback: (offers) => offers[0],
+      faCallback: (offers) => offers[0] ?? null,
       wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }),
       rng: new SeededRandom('career'), maxYears: 25
     });
     const r2 = simulateCareer({
       teams: teams2, userPlayer: player, userTeamId: teams2[0].id, startYear: 0,
       retireDecisionCallback: (ctx) => ctx.player.age >= 38,
-      faCallback: (offers) => offers[0],
+      faCallback: (offers) => offers[0] ?? null,
       wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }),
       rng: new SeededRandom('career'), maxYears: 25
     });

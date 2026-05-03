@@ -108,9 +108,9 @@ function decideRetirement(
   callback: RetireDecisionCallback
 ): RetirementReason | null {
 
-  const FORCED_MAX = { QB: 42, RB: 36, WR: 38 };
-  const SUGGEST_AGE = { QB: 36, RB: 30, WR: 32 };
-  const SUGGEST_OVR = 75;
+  const FORCED_MAX = { QB: 40, RB: 33, WR: 36 };
+  const SUGGEST_AGE = { QB: 33, RB: 28, WR: 30 };
+  const SUGGEST_OVR = 80;
 
   const maxAge = FORCED_MAX[player.position as keyof typeof FORCED_MAX];
   const suggestAge = SUGGEST_AGE[player.position as keyof typeof SUGGEST_AGE];

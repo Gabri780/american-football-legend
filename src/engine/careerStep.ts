@@ -7,6 +7,7 @@ import { PlayoffRound, PlayoffsResult, simulatePlayoffs } from './playoffs';
 import { 
   Contract, ContractsHistory, ContractOffer, FreeAgencyContext, 
   generateRookieContract,
+  computeMarketScore, generateOffers, shouldTeamCut, teamOffersExtension,
   processOffseasonContracts as processOffseasonContractsInternal 
 } from './contracts';
 import { 
@@ -528,6 +529,48 @@ function closeSeasonAndProgress(state: CareerState, lastGameStats: any, playoffs
     leagueRunnerUpTeamId: playoffsResult.runnerUp
   };
 
+  const updatedStatsHistory = [...state.recentStatsHistory, state.currentSeasonResult.playerSeasonStats];
+
+  // Variables para la generación de ofertas
+  const recentTeamRecords = new Map<string, number>();
+  for (const st of state.currentSeasonResult.finalStandings) {
+    recentTeamRecords.set(st.teamId, st.wins);
+  }
+
+  const marketScore = computeMarketScore(
+    progressedPlayer, 
+    updatedStatsHistory.slice(-2), 
+    state.yearsPlayed
+  );
+
+  const offseasonRng = new SeededRandom(state.rngSeed).derive(`contracts-y${state.currentYear}`);
+
+  // Criterio de Evaluación de Contratos
+  const yearsAfterDecrement = state.currentContract.yearsRemaining - 1;
+  const virtualContract = { 
+    ...state.currentContract, 
+    yearsRemaining: yearsAfterDecrement 
+  };
+
+  let pendingContractOffers: ContractOffer[] | null = null;
+  let pendingContractContext: FreeAgencyContext | null = null;
+
+  // Orden estricto: FA -> CUT -> EXTENSION -> TRÁMITE
+  if (yearsAfterDecrement === 0) {
+    // 1. FA por expiración
+    pendingContractOffers = generateOffers(progressedPlayer, state.currentContract, marketScore, state.currentTeams, false, false, recentTeamRecords, offseasonRng);
+    pendingContractContext = { player: progressedPlayer, yearsPlayed: state.yearsPlayed, currentContract: state.currentContract, isExtensionWindow: false, wasJustCut: false };
+  } else if (yearsAfterDecrement > 0 && shouldTeamCut(progressedPlayer, virtualContract, offseasonRng)) {
+    // 2. CUT
+    pendingContractOffers = generateOffers(progressedPlayer, state.currentContract, marketScore, state.currentTeams, false, true, recentTeamRecords, offseasonRng);
+    pendingContractContext = { player: progressedPlayer, yearsPlayed: state.yearsPlayed, currentContract: state.currentContract, isExtensionWindow: false, wasJustCut: true };
+  } else if (yearsAfterDecrement > 0 && teamOffersExtension(progressedPlayer, virtualContract, marketScore, offseasonRng)) {
+    // 3. EXTENSION
+    pendingContractOffers = generateOffers(progressedPlayer, state.currentContract, marketScore, state.currentTeams, true, false, recentTeamRecords, offseasonRng);
+    pendingContractContext = { player: progressedPlayer, yearsPlayed: state.yearsPlayed, currentContract: state.currentContract, isExtensionWindow: true, wasJustCut: false };
+  }
+  // 4. TRÁMITE: se quedan en null
+
   return {
     ...state,
     phase: 'offseason_contracts',
@@ -539,7 +582,9 @@ function closeSeasonAndProgress(state: CareerState, lastGameStats: any, playoffs
     careerPlayoffStats: newCareerPlayoff,
     championshipsWon: newChampionships,
     superBowlAppearances: newSuperBowls,
-    recentStatsHistory: [...state.recentStatsHistory, state.currentSeasonResult.playerSeasonStats]
+    recentStatsHistory: updatedStatsHistory,
+    pendingContractOffers,
+    pendingContractContext
   };
 }
 
@@ -648,7 +693,7 @@ export function processOffseasonWealth(state: CareerState, decisions: WealthDeci
   };
   
   // === CHECK retirement (replica decideRetirement de career.ts) ===
-  const FORCED_MAX = { QB: 42, RB: 36, WR: 38 };
+  const FORCED_MAX = { QB: 40, RB: 33, WR: 36 };
   const maxAge = FORCED_MAX[stateAfterWealth.currentPlayer.position as keyof typeof FORCED_MAX];
   
   if (stateAfterWealth.currentPlayer.age >= maxAge) {
@@ -660,8 +705,8 @@ export function processOffseasonWealth(state: CareerState, decisions: WealthDeci
   }
   
   // age_threshold check (mismos thresholds que simulateCareer)
-  const SUGGEST_AGE = { QB: 33, RB: 30, WR: 32 };
-  const SUGGEST_OVR = 75;
+  const SUGGEST_AGE = { QB: 33, RB: 28, WR: 30 };
+  const SUGGEST_OVR = 80;
   const suggestAge = SUGGEST_AGE[stateAfterWealth.currentPlayer.position as keyof typeof SUGGEST_AGE];
   
   if (stateAfterWealth.currentPlayer.age >= suggestAge && stateAfterWealth.currentPlayer.overall <= SUGGEST_OVR) {

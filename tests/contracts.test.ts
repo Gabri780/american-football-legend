@@ -81,7 +81,7 @@ describe('simulateCareer with contracts integration', () => {
       userTeamId: teams[0].id,
       startYear: 0,
       retireDecisionCallback: (ctx) => ctx.player.age >= 38,
-      wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }), faCallback: (offers) => offers[0],  // siempre primera oferta
+      wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }), faCallback: (offers) => offers[0] ?? null,  // siempre primera oferta
       rng: new SeededRandom('career'),
       maxYears: 25
     });

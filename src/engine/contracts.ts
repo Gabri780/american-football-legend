@@ -112,12 +112,27 @@ export function computeMarketScore(player: Player, recentStats: PlayerSeasonStat
   // Age component (20%)
   const age = player.age;
   let ageScore: number;
-  if (age <= 26) ageScore = 100;
-  else if (age <= 29) ageScore = 90;
-  else if (age <= 31) ageScore = 70;
-  else if (age <= 33) ageScore = 40;
-  else if (age <= 35) ageScore = 20;
-  else ageScore = 5;
+  if (player.position === 'QB') {
+    if (age <= 30) ageScore = 100;
+    else if (age === 31) ageScore = 70;
+    else if (age === 32) ageScore = 40;
+    else if (age === 33) ageScore = 20;
+    else if (age === 34) ageScore = 8;
+    else ageScore = 0;
+  } else if (player.position === 'RB') {
+    if (age <= 26) ageScore = 100;
+    else if (age === 27) ageScore = 60;
+    else if (age === 28) ageScore = 30;
+    else if (age === 29) ageScore = 10;
+    else ageScore = 0;
+  } else { // WR
+    if (age <= 28) ageScore = 100;
+    else if (age === 29) ageScore = 70;
+    else if (age === 30) ageScore = 40;
+    else if (age === 31) ageScore = 20;
+    else if (age === 32) ageScore = 8;
+    else ageScore = 0;
+  }
   const ageComponent = ageScore * 0.20;
 
   return ovrComponent + performanceComponent + ageComponent;
@@ -175,37 +190,36 @@ export function generateOffers(
   let yearsRange: [number, number];
   let guaranteedPctRange: [number, number];
 
-  if (marketScore >= 90) {
+  if (marketScore >= 95) {
     numOffers = rng.randomInt(5, 7);
-    salaryRange = [40, 60];
+    salaryRange = [25, 45];
     yearsRange = [4, 6];
-    guaranteedPctRange = [0.6, 0.8];
-  } else if (marketScore >= 80) {
+    guaranteedPctRange = [0.4, 0.6];
+  } else if (marketScore >= 85) {
     numOffers = rng.randomInt(4, 6);
-    salaryRange = [25, 40];
+    salaryRange = [15, 28];
     yearsRange = [3, 5];
-    guaranteedPctRange = [0.5, 0.7];
-  } else if (marketScore >= 70) {
-    numOffers = rng.randomInt(3, 5);
-    salaryRange = [12, 25];
-    yearsRange = [3, 4];
     guaranteedPctRange = [0.3, 0.5];
-  } else if (marketScore >= 60) {
+  } else if (marketScore >= 75) {
+    numOffers = rng.randomInt(3, 5);
+    salaryRange = [8, 16];
+    yearsRange = [3, 4];
+    guaranteedPctRange = [0.2, 0.4];
+  } else if (marketScore >= 65) {
     numOffers = rng.randomInt(1, 2);
-    salaryRange = [0.5, 2];
+    salaryRange = [3, 8];
     yearsRange = [1, 2];
-    guaranteedPctRange = [0.0, 0.15];
-  } else if (marketScore >= 50) {
-    // NUEVO bracket: 60% chance de UNA oferta minimum, 40% chance de NINGUNA
+    guaranteedPctRange = [0.0, 0.10];
+  } else if (marketScore >= 55) {
     numOffers = rng.random() < 0.6 ? 1 : 0;
-    salaryRange = [0.5, 1.5];
+    salaryRange = [0.8, 3];
     yearsRange = [1, 1];
     guaranteedPctRange = [0.0, 0.05];
   } else {
-    // marketScore < 50: NINGUNA oferta. Mercado vacío.
-    numOffers = 0;
-    salaryRange = [0, 0];
-    yearsRange = [0, 0];
+    // marketScore < 55: NINGUNA oferta o mínimo absoluto ya cubierto por la lógica general
+    numOffers = rng.random() < 0.3 ? 1 : 0;
+    salaryRange = [0.5, 1.2];
+    yearsRange = [1, 1];
     guaranteedPctRange = [0, 0];
   }
 
@@ -290,19 +304,34 @@ export function shouldTeamCut(player: Player, contract: Contract, rng: SeededRan
   if (nonGuaranteedYears <= 0) return false;
 
   // Cut probability: a más sueldo y menos OVR, más probable
-  const expectedOVR = contract.salaryPerYear * 0.5 + 60;  // $20M → expect OVR 70, $40M → expect OVR 80
+  const expectedOVR = contract.salaryPerYear * 0.4 + 55;  // $20M → expect OVR 63, $40M → expect OVR 71
   const ovrGap = expectedOVR - player.overall;
 
   if (ovrGap <= 0) return false; // performing arriba de expectativa, NO cut
-  if (ovrGap < 5) return rng.random() < 0.10;   // ligero gap, 10% cut
-  if (ovrGap < 10) return rng.random() < 0.30;  // medio gap, 30% cut
-  if (ovrGap < 15) return rng.random() < 0.60;  // gap grande, 60% cut
-  return rng.random() < 0.85;                   // gap masivo, 85% cut
+
+  let probBase = 0;
+  if (ovrGap < 5) probBase = 0.10;   // ligero gap
+  else if (ovrGap < 10) probBase = 0.30;  // medio gap
+  else if (ovrGap < 15) probBase = 0.60;  // gap grande
+  else probBase = 0.85;                   // gap masivo
+
+  // Age boosts para veteranos
+  const ageThreshold = player.position === 'QB' ? 33
+    : player.position === 'WR' ? 32
+    : 30; // RB
+  
+  if (player.age >= ageThreshold) {
+    if (player.overall < 70) probBase += 0.50;
+    else if (player.overall < 78) probBase += 0.30;
+  }
+
+  const finalProb = Math.min(0.95, probBase);
+  return rng.random() < finalProb;
 }
 
 export function teamOffersExtension(player: Player, contract: Contract, marketScore: number, rng: SeededRandom): boolean {
-  // Solo si quedan 1-2 años de contrato
-  if (contract.yearsRemaining > 2 || contract.yearsRemaining < 1) return false;
+  // Solo si queda exactamente 1 año de contrato
+  if (contract.yearsRemaining !== 1) return false;
 
   // Probabilidad basada en market score:
   // - >=90: 70% chance equipo ofrece extensión (jugador élite)
@@ -341,8 +370,8 @@ export function processOffseasonContracts(params: {
   const { player, currentContract, currentYear, yearsPlayed, recentStats, recentTeamRecords, teams, faCallback, rng } = params;
 
   let earningsThisYear = currentContract.salaryPerYear;
-  currentContract.yearsRemaining -= 1;
-  currentContract.guaranteedRemaining = Math.max(0, currentContract.guaranteedRemaining - currentContract.salaryPerYear);
+  // NO decrementamos aún: evaluamos cut sobre contrato vigente
+  const teamCuts = (currentContract.yearsRemaining > 0) && shouldTeamCut(player, currentContract, rng);
 
   const marketScore = computeMarketScore(player, recentStats, yearsPlayed);
   let newContract: Contract | null = currentContract;
@@ -350,9 +379,24 @@ export function processOffseasonContracts(params: {
   let retirementReason: 'no_market' | null = null;
   const contractEvents: ContractEvent[] = [];
 
-  if (currentContract.yearsRemaining === 0) {
-    const offers = generateOffers(player, currentContract, marketScore, teams, false, false, recentTeamRecords, rng);
-    const ctx: FreeAgencyContext = { player, yearsPlayed, currentContract, isExtensionWindow: false, wasJustCut: false };
+  if (teamCuts) {
+    // PASO 3: Proceso de CUT
+    // Pagamos garantía restante (menos el sueldo ya contado en earningsThisYear)
+    earningsThisYear += Math.max(0, currentContract.guaranteedRemaining - currentContract.salaryPerYear);
+    currentContract.yearsRemaining = 0;
+    currentContract.guaranteedRemaining = 0;
+    contractEvents.push({
+      year: currentYear,
+      type: 'cut',
+      oldTeamId: currentContract.teamId,
+      newTeamId: currentContract.teamId,
+      contractValue: 0,
+      yearsTotal: 0,
+      guaranteedTotal: 0
+    });
+
+    const offers = generateOffers(player, currentContract, marketScore, teams, false, true, recentTeamRecords, rng);
+    const ctx: FreeAgencyContext = { player, yearsPlayed, currentContract, isExtensionWindow: false, wasJustCut: true };
     const decision = faCallback(offers, ctx);
 
     if (decision === null) {
@@ -389,22 +433,15 @@ export function processOffseasonContracts(params: {
         guaranteedTotal: decision.guaranteedTotal
       });
     }
-  } else if (currentContract.yearsRemaining > 0) {
-    if (shouldTeamCut(player, currentContract, rng)) {
-      earningsThisYear += currentContract.guaranteedRemaining;
-      currentContract.yearsRemaining = 0;
-      contractEvents.push({
-        year: currentYear,
-        type: 'cut',
-        oldTeamId: currentContract.teamId,
-        newTeamId: currentContract.teamId,
-        contractValue: 0,
-        yearsTotal: 0,
-        guaranteedTotal: 0
-      });
+  } else {
+    // PASO 4: Si NO hubo cut, decrementamos
+    currentContract.yearsRemaining -= 1;
+    currentContract.guaranteedRemaining = Math.max(0, currentContract.guaranteedRemaining - currentContract.salaryPerYear);
 
-      const offers = generateOffers(player, currentContract, marketScore, teams, false, true, recentTeamRecords, rng);
-      const ctx: FreeAgencyContext = { player, yearsPlayed, currentContract, isExtensionWindow: false, wasJustCut: true };
+    if (currentContract.yearsRemaining === 0) {
+      // FA por expiración
+      const offers = generateOffers(player, currentContract, marketScore, teams, false, false, recentTeamRecords, rng);
+      const ctx: FreeAgencyContext = { player, yearsPlayed, currentContract, isExtensionWindow: false, wasJustCut: false };
       const decision = faCallback(offers, ctx);
 
       if (decision === null) {
@@ -442,6 +479,7 @@ export function processOffseasonContracts(params: {
         });
       }
     } else {
+      // Evaluar extensión
       if (teamOffersExtension(player, currentContract, marketScore, rng)) {
         const offers = generateOffers(player, currentContract, marketScore, teams, true, false, recentTeamRecords, rng);
         const ctx: FreeAgencyContext = { player, yearsPlayed, currentContract, isExtensionWindow: true, wasJustCut: false };

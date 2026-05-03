@@ -287,7 +287,7 @@ describe('simulateCareer with wealth integration', () => {
       userTeamId: teams[0].id,
       startYear: 0,
       retireDecisionCallback: (ctx) => ctx.player.age >= 38,
-      faCallback: (offers) => offers[0],
+      faCallback: (offers) => offers[0] ?? null,
       wealthCallback: () => ({ buyPropertyIds: [], sellPropertyIds: [], buyVehicleIds: [], sellVehicleIds: [] }),
       rng: new SeededRandom('career'),
       maxYears: 25
