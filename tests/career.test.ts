@@ -54,8 +54,9 @@ describe('simulateCareer - retires at age 30+ when prompted', () => {
     expect(result.playerAtEnd.age).toBe(result.playerAtStart.age + result.yearsPlayed);
   });
 
-  it('career regular stats games played = yearsPlayed * 17', () => {
-    expect(result.careerRegularStats.gamesPlayed).toBe(result.yearsPlayed * 17);
+  it('career regular stats games played <= yearsPlayed * 17', () => {
+    expect(result.careerRegularStats.gamesPlayed).toBeLessThanOrEqual(result.yearsPlayed * 17);
+    expect(result.careerRegularStats.gamesPlayed).toBeGreaterThan(0);
   });
 
   it('championshipsWon <= superBowlAppearances', () => {

@@ -18,6 +18,7 @@ import {
 import { CareerResult, RetirementReason, SeasonHistoryEntry } from './career';
 import { generateSchedule } from './schedule';
 import { progressPlayer } from './progression';
+import { tickInjuries, recoverFromInjuriesOffseason } from './injuries';
 
 /**
  * Phase of the career flow. The motor enforces transitions:
@@ -311,6 +312,7 @@ export function simulateNextGame(state: CareerState): NextGameResult {
       schedule,
       userPlayer: state.currentPlayer,
       userTeamId: state.currentTeamId,
+      yearsPlayed: state.yearsPlayed,
       rng: seasonRng
     });
 
@@ -387,6 +389,7 @@ function serveRegularSeasonGame(state: CareerState): NextGameResult {
     teams: state.currentTeams,
     userPlayer: state.currentPlayer,
     userTeamId: state.currentTeamId,
+    yearsPlayed: state.yearsPlayed,
     rng: playoffsRng
   });
 
@@ -469,6 +472,7 @@ function closeSeasonAndProgress(state: CareerState, lastGameStats: any, playoffs
   if (!state.currentSeasonResult) throw new Error('Missing currentSeasonResult');
   
   // 1. Acumular stats de carrera
+    // Option B: addStats will use gamesPlayed from stats (which is 0 or 1 per game stats)
   const newCareerRegular = addStats(state.careerRegularStats, state.currentSeasonResult.playerSeasonStats);
   
   let newCareerPlayoff = state.careerPlayoffStats;
@@ -490,8 +494,11 @@ function closeSeasonAndProgress(state: CareerState, lastGameStats: any, playoffs
   const ovrAtStart = state.ovrAtStartOfCurrentYear;
 
   // 2. Progresión del jugador (clonamos para evitar mutaciones indeseadas)
+  const injuriesRecovered = recoverFromInjuriesOffseason(state.currentPlayer.injuries);
+  const playerWithInjuriesRecovered = { ...state.currentPlayer, injuries: injuriesRecovered };
+  
   const progressionRng = new SeededRandom(state.rngSeed).derive(`progression-y${state.currentYear}`);
-  const progResult = progressPlayer(structuredClone(state.currentPlayer), { rng: progressionRng });
+  const progResult = progressPlayer(structuredClone(playerWithInjuriesRecovered), { rng: progressionRng });
   let progressedPlayer = progResult.player;
   
   // 3. Envejecimiento de la liga

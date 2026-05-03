@@ -15,6 +15,7 @@ export interface QBDriveStats {
   rushTDs: number;
   sacks: number;
   fumbles: number;
+  gamesPlayed?: number; // Added for B1 aggregation
 }
 
 export interface RBDriveStats {
@@ -26,6 +27,7 @@ export interface RBDriveStats {
   receivingYards: number;
   receivingTDs: number;
   targets: number;
+  gamesPlayed?: number;
 }
 
 export interface WRDriveStats {
@@ -34,6 +36,7 @@ export interface WRDriveStats {
   receivingYards: number;
   receivingTDs: number;
   drops: number;
+  gamesPlayed?: number;
 }
 
 export type PlayerDriveStats = QBDriveStats | RBDriveStats | WRDriveStats;

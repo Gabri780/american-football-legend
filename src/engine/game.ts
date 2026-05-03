@@ -62,6 +62,7 @@ export interface Game {
 
   // For narrative generation (Task 6E)
   userPlayer?: Player;
+  userDidNotPlay?: boolean;  // true if the user player did not play due to injury
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -79,6 +80,9 @@ export interface SimulateGameParams {
   userPlayer?: Player;                    // present if the user plays
   userPlayerTeam?: 'home' | 'away';
   userPlayerScheme?: OffensiveScheme;
+  yearsPlayed: number;                    // Needed for injury protection
+  currentYear: number;
+  weekNumber: number;
   rng: SeededRandom;
 }
 
@@ -86,14 +90,26 @@ export interface SimulateGameParams {
 // SKELETON FUNCTION
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { canPlayThisWeek, computeInjuryProbability, rollInjury } from './injuries';
+
 /**
  * Simulates a full game between two teams using a 4-quarter clock.
  */
 export function simulateGame(params: SimulateGameParams): Game {
-  const { homeTeamId, awayTeamId, context, rng } = params;
+  const { homeTeamId, awayTeamId, context, rng, yearsPlayed, currentYear, weekNumber } = params;
   const userPlayer = params.userPlayer;
   const userTeam = params.userPlayerTeam;
   const userScheme = params.userPlayerScheme || 'Balanced';
+
+  let effectiveHomeOffense = params.homeOffenseRating;
+  let effectiveAwayOffense = params.awayOffenseRating;
+
+  const userDidNotPlay = userPlayer && !canPlayThisWeek(userPlayer);
+
+  if (userDidNotPlay) {
+    if (userTeam === 'home') effectiveHomeOffense = Math.max(40, effectiveHomeOffense - 10);
+    else if (userTeam === 'away') effectiveAwayOffense = Math.max(40, effectiveAwayOffense - 10);
+  }
 
   const homeStats: GameTeamStats = {
     teamId: homeTeamId, pointsScored: 0, totalYards: 0, drives: 0, turnovers: 0
@@ -105,11 +121,11 @@ export function simulateGame(params: SimulateGameParams): Game {
   // Helpers for stats
   const initEmptyStats = (player: Player): PlayerDriveStats => {
     if (player.position === 'QB') {
-      return { passAttempts: 0, completions: 0, passYards: 0, passTDs: 0, interceptions: 0, rushAttempts: 0, rushYards: 0, rushTDs: 0, sacks: 0, fumbles: 0 };
+      return { passAttempts: 0, completions: 0, passYards: 0, passTDs: 0, interceptions: 0, rushAttempts: 0, rushYards: 0, rushTDs: 0, sacks: 0, fumbles: 0, gamesPlayed: 0 };
     } else if (player.position === 'RB') {
-      return { carries: 0, rushYards: 0, rushTDs: 0, fumbles: 0, receptions: 0, receivingYards: 0, receivingTDs: 0, targets: 0 };
+      return { carries: 0, rushYards: 0, rushTDs: 0, fumbles: 0, receptions: 0, receivingYards: 0, receivingTDs: 0, targets: 0, gamesPlayed: 0 };
     } else {
-      return { targets: 0, receptions: 0, receivingYards: 0, receivingTDs: 0, drops: 0 };
+      return { targets: 0, receptions: 0, receivingYards: 0, receivingTDs: 0, drops: 0, gamesPlayed: 0 };
     }
   };
 
@@ -139,7 +155,7 @@ export function simulateGame(params: SimulateGameParams): Game {
   while (currentQuarter <= 4) {
     const q = currentQuarter as 1 | 2 | 3 | 4;
     const isHomeOffense = currentPossession === 'home';
-    const offRating = isHomeOffense ? params.homeOffenseRating : params.awayOffenseRating;
+    const offRating = isHomeOffense ? effectiveHomeOffense : effectiveAwayOffense;
     const defRating = isHomeOffense ? params.awayDefenseRating : params.homeDefenseRating;
     const offTeamId = isHomeOffense ? homeTeamId : awayTeamId;
     const defTeamId = isHomeOffense ? awayTeamId : homeTeamId;
@@ -175,7 +191,7 @@ export function simulateGame(params: SimulateGameParams): Game {
       tdAttribution = resolveTDAttribution(ratio, userPlayer?.archetype || 'non-mobile', rng);
     }
 
-    if (userPlayer && userTeam === currentPossession) {
+    if (userPlayer && !userDidNotPlay && userTeam === currentPossession) {
       const driveStats = computePlayerDriveStats(drive, userPlayer, userScheme, rng, tdAttribution);
       accumulateStats(accumulatedUserStats!, driveStats);
     }
@@ -266,7 +282,20 @@ export function simulateGame(params: SimulateGameParams): Game {
     summary: '',
     highlightPlay: '',
     userPlayer,
+    userDidNotPlay
   };
+
+  if (userPlayer && !userDidNotPlay) {
+    if (gameResult.userPlayerStats) {
+      gameResult.userPlayerStats.gamesPlayed = 1;
+    }
+    const injuryRng = rng.derive('injury-roll');
+    const P = computeInjuryProbability(userPlayer, userPlayer.freshness, injuryRng);
+    if (injuryRng.random() < P) {
+      const injury = rollInjury(userPlayer, currentYear, weekNumber, injuryRng);
+      userPlayer.injuries.push(injury);
+    }
+  }
 
   const narrative = generateGameNarrative(gameResult);
   gameResult.summary = narrative.summary;
@@ -285,9 +314,12 @@ export function simulateGameFromTeams(params: {
   userPlayer?: Player;
   userPlayerTeam?: 'home' | 'away';
   userPlayerScheme?: OffensiveScheme;
+  yearsPlayed: number;
+  currentYear: number;
+  weekNumber: number;
   rng: SeededRandom;
 }): Game {
-  const { homeTeam, awayTeam, context, userPlayer, userPlayerTeam, userPlayerScheme, rng } = params;
+  const { homeTeam, awayTeam, context, userPlayer, userPlayerTeam, userPlayerScheme, yearsPlayed, currentYear, weekNumber, rng } = params;
 
   return simulateGame({
     homeTeamId: homeTeam.id,
@@ -300,6 +332,9 @@ export function simulateGameFromTeams(params: {
     userPlayer,
     userPlayerTeam,
     userPlayerScheme,
+    yearsPlayed,
+    currentYear,
+    weekNumber,
     rng
   });
 }

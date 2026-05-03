@@ -11,11 +11,20 @@ export interface GameClock {
   seconds: number;
 }
 
+export type InjurySeverity = 'minor' | 'moderate' | 'major' | 'season_ending';
+
+export type InjuryType = 
+  | 'hamstring' | 'knee' | 'shoulder' | 'concussion' 
+  | 'ankle' | 'back' | 'wrist' | 'rib' | 'foot' | 'groin';
+
 export interface Injury {
-  id: string;
-  type: string;
-  severity: 'Minor' | 'Moderate' | 'Major';
-  weeksRemaining: number;
+  id: string;                    // unique within career
+  type: InjuryType;
+  severity: InjurySeverity;
+  weeksOut: number;              // total weeks DNP when diagnosed
+  weeksRemaining: number;        // weeks left (decrements per week/game)
+  yearOccurred: number;
+  weekOccurred: number;          // 1-17 regular or 18+ playoffs
 }
 
 export interface Contract {

@@ -4,6 +4,7 @@ import { Player } from './player';
 import { Game, simulateGameFromTeams } from './game';
 import { SeededRandom } from './prng';
 import { QBDriveStats, RBDriveStats, WRDriveStats } from './playerDriveStats';
+import { tickInjuries } from './injuries';
 
 export interface TeamStandings {
   teamId: string;
@@ -69,9 +70,10 @@ export function simulateSeason(params: {
   schedule: Schedule;
   userPlayer: Player;
   userTeamId: string;
+  yearsPlayed: number;
   rng: SeededRandom;
 }): SeasonResult {
-  const { teams, schedule, userPlayer, userTeamId, rng } = params;
+  const { teams, schedule, userPlayer, userTeamId, yearsPlayed, rng } = params;
 
   // 1. Validaciones
   if (!teams.find(t => t.id === userTeamId)) {
@@ -119,6 +121,9 @@ export function simulateSeason(params: {
 
   // 3. Loop semanal
   for (let w = 1; w <= 18; w++) {
+    // Tick injuries at the start of the week for the user player
+    userPlayer.injuries = tickInjuries(userPlayer.injuries);
+
     const gamesForWeek = schedule.games.filter(g => g.week === w);
     
     const byeTeams = teams
@@ -158,6 +163,9 @@ export function simulateSeason(params: {
         userPlayer: userPlayerTeam ? userPlayer : undefined,
         userPlayerTeam,
         userPlayerScheme: 'Balanced',
+        yearsPlayed,
+        currentYear: schedule.year,
+        weekNumber: w,
         rng: subRng
       });
 
@@ -195,8 +203,9 @@ export function simulateSeason(params: {
 
       // Acumular PlayerGameStats
       if (userPlayerTeam && simGame.userPlayerStats) {
-        playerSeasonStats.gamesPlayed += 1;
+        // Option B: only increment gamesPlayed if player actually played (stats.gamesPlayed will be 1 or 0)
         const stats = simGame.userPlayerStats;
+        playerSeasonStats.gamesPlayed += (stats as any).gamesPlayed || 0;
 
         if (userPlayer.position === 'QB') {
           const qbStats = stats as QBDriveStats;
@@ -333,9 +342,7 @@ export function simulateSeason(params: {
     throw new Error(`Expected 32 final standings, got ${finalStandings.length}`);
   }
 
-  if (playerSeasonStats.gamesPlayed !== 17) {
-    throw new Error(`User player played ${playerSeasonStats.gamesPlayed} games, expected 17`);
-  }
+  // Verification removed: playerSeasonStats.gamesPlayed may be < 17 due to injuries (Option B)
 
   return {
     year: schedule.year,

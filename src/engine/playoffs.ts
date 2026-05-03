@@ -64,7 +64,7 @@ function sortTeamsByTiebreakers(standings: TeamStandings[], seasonResult: Season
     for (const sum of seasonResult.weekSummaries) {
       for (const g of sum.games) {
         if ((g.homeTeamId === a.teamId && g.awayTeamId === b.teamId) ||
-            (g.homeTeamId === b.teamId && g.awayTeamId === a.teamId)) {
+          (g.homeTeamId === b.teamId && g.awayTeamId === a.teamId)) {
           if (g.winnerId === a.teamId) h2hWinsA++;
           else if (g.winnerId === b.teamId) h2hWinsB++;
         }
@@ -136,7 +136,7 @@ function simulateOvertime(params: {
   let otScoreAway = 0;
   let drivesPlayed = 0;
   let firstReceivingScored: 'TD' | 'FG' | 'NONE' | null = null;
-  
+
   const coinFlip = rng.random() < 0.5;
   let currentPossession: 'home' | 'away' = coinFlip ? 'home' : 'away';
 
@@ -168,13 +168,13 @@ function simulateOvertime(params: {
         tdAttribution = resolveTDAttribution(0.60, userPlayer.archetype || 'non-mobile', driveRng);
       }
       const driveStats = computePlayerDriveStats(drive, userPlayer, 'Balanced', driveRng, tdAttribution);
-      
+
       if (!baseGame.userPlayerStats) {
         if (userPlayer.position === 'QB') baseGame.userPlayerStats = { passAttempts: 0, completions: 0, passYards: 0, passTDs: 0, interceptions: 0, rushAttempts: 0, rushYards: 0, rushTDs: 0, sacks: 0, fumbles: 0 } as QBDriveStats;
         else if (userPlayer.position === 'RB') baseGame.userPlayerStats = { carries: 0, rushYards: 0, rushTDs: 0, fumbles: 0, receptions: 0, receivingYards: 0, receivingTDs: 0, targets: 0 } as RBDriveStats;
         else baseGame.userPlayerStats = { targets: 0, receptions: 0, receivingYards: 0, receivingTDs: 0, drops: 0 } as WRDriveStats;
       }
-      
+
       const target = baseGame.userPlayerStats as any;
       const source = driveStats as any;
       for (const key in source) {
@@ -244,9 +244,10 @@ export function simulatePlayoffs(params: {
   teams: Team[];
   userPlayer: Player;
   userTeamId: string;
+  yearsPlayed: number;
   rng: SeededRandom;
 }): PlayoffsResult {
-  const { seasonResult, teams, userPlayer, userTeamId, rng } = params;
+  const { seasonResult, teams, userPlayer, userTeamId, yearsPlayed, rng } = params;
 
   const eastDivisions = ['Eastern_East', 'Eastern_Atlantic', 'Eastern_North', 'Eastern_South'];
   const westDivisions = ['Western_Central', 'Western_Mountain', 'Western_Pacific', 'Western_Southwest'];
@@ -303,6 +304,9 @@ export function simulatePlayoffs(params: {
       userPlayer: userPlayerTeam ? userPlayer : undefined,
       userPlayerTeam,
       userPlayerScheme: 'Balanced',
+      yearsPlayed,
+      currentYear: seasonResult.year,
+      weekNumber: 18 + (round === 'wild_card' ? 1 : round === 'divisional' ? 2 : round === 'conference' ? 3 : 4),
       rng: subRng
     });
 
@@ -322,8 +326,8 @@ export function simulatePlayoffs(params: {
     }
 
     if (userPlayerTeam && baseGame.userPlayerStats) {
-      playerPlayoffStats.gamesPlayed++;
       const stats = baseGame.userPlayerStats;
+      playerPlayoffStats.gamesPlayed += (stats as any).gamesPlayed || 0;
       if (userPlayer.position === 'QB') {
         const s = stats as QBDriveStats;
         playerPlayoffStats.passAttempts += s.passAttempts || 0;
@@ -371,7 +375,7 @@ export function simulatePlayoffs(params: {
 
   // Wild Card
   const wcWinners: { Eastern: PlayoffSeed[], Western: PlayoffSeed[] } = { Eastern: [easternSeeds[0]], Western: [westernSeeds[0]] };
-  
+
   [
     { conf: 'Eastern' as const, seeds: easternSeeds },
     { conf: 'Western' as const, seeds: westernSeeds }
@@ -384,7 +388,7 @@ export function simulatePlayoffs(params: {
       games.wildCard.push(game);
       const winnerSeed = game.winnerId === home.teamId ? home : away;
       wcWinners[conf].push(winnerSeed);
-      
+
       if (userMadePlayoffs && game.winnerId !== userTeamId && (home.teamId === userTeamId || away.teamId === userTeamId)) {
         userPlayoffExitRound = 'wild_card';
       }
@@ -395,7 +399,7 @@ export function simulatePlayoffs(params: {
 
   // Divisional
   const divWinners: { Eastern: PlayoffSeed[], Western: PlayoffSeed[] } = { Eastern: [], Western: [] };
-  
+
   [
     { conf: 'Eastern' as const, survivors: wcWinners.Eastern },
     { conf: 'Western' as const, survivors: wcWinners.Western }
@@ -410,7 +414,7 @@ export function simulatePlayoffs(params: {
       games.divisional.push(game);
       const winnerSeed = game.winnerId === home.teamId ? home : away;
       divWinners[conf].push(winnerSeed);
-      
+
       if (userMadePlayoffs && game.winnerId !== userTeamId && (home.teamId === userTeamId || away.teamId === userTeamId)) {
         userPlayoffExitRound = 'divisional';
       }
@@ -443,7 +447,7 @@ export function simulatePlayoffs(params: {
   // Championship Bowl
   let champHome = confWinners.Eastern!;
   let champAway = confWinners.Western!;
-  
+
   let swap = false;
   if (champAway.seed < champHome.seed) {
     swap = true;
@@ -455,7 +459,7 @@ export function simulatePlayoffs(params: {
       if (champAway.teamId.localeCompare(champHome.teamId) < 0) swap = true;
     }
   }
-  
+
   if (swap) {
     const temp = champHome;
     champHome = champAway;

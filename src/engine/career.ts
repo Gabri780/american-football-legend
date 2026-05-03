@@ -5,6 +5,7 @@ import { TeamStandings, PlayerSeasonStats, SeasonResult, simulateSeason } from '
 import { PlayoffRound, PlayoffsResult, simulatePlayoffs } from './playoffs';
 import { SeededRandom } from './prng';
 import { progressPlayer } from './progression';
+import { recoverFromInjuriesOffseason } from './injuries';
 
 export type RetirementReason =
   | 'age_threshold'
@@ -213,6 +214,7 @@ export function simulateCareer(params: {
       schedule,
       userPlayer: currentPlayer,
       userTeamId: currentTeamId,
+      yearsPlayed,
       rng: seasonRng
     });
 
@@ -223,6 +225,7 @@ export function simulateCareer(params: {
       teams: currentTeams,
       userPlayer: currentPlayer,
       userTeamId: currentTeamId,
+      yearsPlayed,
       rng: playoffsRng
     });
 
@@ -306,6 +309,7 @@ export function simulateCareer(params: {
       retirementReason = 'no_market';
     } else {
       currentContract = offseasonResult.newContract!;
+      currentPlayer.injuries = recoverFromInjuriesOffseason(currentPlayer.injuries);
       currentTeamId = currentContract.teamId;
 
       const wealthResult = processOffseasonWealth({

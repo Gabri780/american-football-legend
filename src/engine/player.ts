@@ -68,6 +68,7 @@ export interface Player {
   composure: number;
   leadership: number;
   workEthic: number;
+  injuryProneness: number;
 
   // Position Specific
   positionalSkills: QBSkills | RBSkills | WRSkills;
@@ -248,6 +249,7 @@ export function createPlayer(params: CreatePlayerOptions): Player {
     scoutingLevel: tier === 'user' ? 100 : 0,
     freshness: 100,
     morale: 80,
+    injuryProneness: 50, // placeholder, actual value generated below
     injuries: [],
     chemistry: {},
     careerStats: [],
@@ -257,6 +259,17 @@ export function createPlayer(params: CreatePlayerOptions): Player {
     yearInLeague: 1,
     collegeId: generateCollegeId(rng, tier)
   };
+
+  // 4.1 Injury Proneness
+  const injuryPronenessRng = rng.derive('injury-proneness');
+  const rProne = injuryPronenessRng.random();
+  if (rProne < 0.70) {
+    player.injuryProneness = injuryPronenessRng.randomInt(40, 60);
+  } else if (rProne < 0.95) {
+    player.injuryProneness = injuryPronenessRng.randomInt(60, 75);
+  } else {
+    player.injuryProneness = injuryPronenessRng.randomInt(75, 99);
+  }
 
   // 5. Positional Skills
   if (position === 'QB') {
