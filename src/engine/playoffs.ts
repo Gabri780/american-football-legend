@@ -5,6 +5,7 @@ import { SeededRandom } from './prng';
 import { SeasonResult, TeamStandings, PlayerSeasonStats } from './season';
 import { simulateDrive, GameContext } from './drive';
 import { computePlayerDriveStats, resolveTDAttribution, QBDriveStats, RBDriveStats, WRDriveStats } from './playerDriveStats';
+import { PlayerSnapshot } from './types';
 
 export type PlayoffRound = 'wild_card' | 'divisional' | 'conference' | 'championship';
 
@@ -47,6 +48,8 @@ export interface PlayoffsResult {
   playerPlayoffStats: PlayerSeasonStats; // stats SOLO de partidos de playoff
   userMadePlayoffs: boolean;
   userPlayoffExitRound: PlayoffRound | 'champion' | null; // null si no clasificó
+  userPlayerSnapshots: PlayerSnapshot[];
+  finalUserPlayerState: PlayerSnapshot;
 }
 
 function sortTeamsByTiebreakers(standings: TeamStandings[], seasonResult: SeasonResult): TeamStandings[] {
@@ -249,6 +252,9 @@ export function simulatePlayoffs(params: {
 }): PlayoffsResult {
   const { seasonResult, teams, userPlayer, userTeamId, yearsPlayed, rng } = params;
 
+  const simUserPlayer = structuredClone(userPlayer);
+  const userPlayerSnapshots: PlayerSnapshot[] = [];
+
   const eastDivisions = ['Eastern_East', 'Eastern_Atlantic', 'Eastern_North', 'Eastern_South'];
   const westDivisions = ['Western_Central', 'Western_Mountain', 'Western_Pacific', 'Western_Southwest'];
 
@@ -299,9 +305,16 @@ export function simulatePlayoffs(params: {
     const isRivalryGame = homeTeam.rivalId === awayTeam.id || awayTeam.rivalId === homeTeam.id;
     const context: GameContext = { isPlayoff: true, isRivalryGame, isPrimetime: false, isHomeGame: true };
 
+    if (userPlayerTeam) {
+      userPlayerSnapshots.push({
+        injuries: structuredClone(simUserPlayer.injuries),
+        freshness: simUserPlayer.freshness
+      });
+    }
+
     const baseGame = simulateGameFromTeams({
       homeTeam, awayTeam, context,
-      userPlayer: userPlayerTeam ? userPlayer : undefined,
+      userPlayer: userPlayerTeam ? simUserPlayer : undefined,
       userPlayerTeam,
       userPlayerScheme: 'Balanced',
       yearsPlayed,
@@ -490,6 +503,11 @@ export function simulatePlayoffs(params: {
     runnerUp: bowlGame.winnerId === bowlGame.homeTeamId ? bowlGame.awayTeamId : bowlGame.homeTeamId,
     playerPlayoffStats,
     userMadePlayoffs,
-    userPlayoffExitRound
+    userPlayoffExitRound,
+    userPlayerSnapshots,
+    finalUserPlayerState: {
+      injuries: structuredClone(simUserPlayer.injuries),
+      freshness: simUserPlayer.freshness
+    }
   };
 }

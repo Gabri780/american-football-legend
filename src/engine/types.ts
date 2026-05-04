@@ -27,6 +27,14 @@ export interface Injury {
   weekOccurred: number;          // 1-17 regular or 18+ playoffs
 }
 
+/**
+ * Snapshot of a player's physical state for UI synchronization.
+ */
+export interface PlayerSnapshot {
+  injuries: Injury[];
+  freshness: number;
+}
+
 export interface Contract {
   years: number;
   totalValue: number;

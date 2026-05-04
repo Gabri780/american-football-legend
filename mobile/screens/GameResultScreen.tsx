@@ -115,12 +115,20 @@ export function GameResultScreen({ game, userPlayer, userTeamId, wasPlayoff, onC
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>YOUR PERFORMANCE</Text>
           <View style={styles.statsContainer}>
-            {renderStats()}
+            {game.userDidNotPlay ? (
+              <View style={[styles.dnpContainer, { borderColor: theme.colors.accentNegative }]}>
+                <Text style={[styles.dnpTitle, { color: theme.colors.accentNegative }]}>DNP</Text>
+                <Text style={styles.dnpText}>You did not play this game due to injury.</Text>
+                <Text style={styles.dnpSubText}>Your team played without you.</Text>
+              </View>
+            ) : (
+              renderStats()
+            )}
           </View>
         </View>
 
         {/* Narrative Card */}
-        {(game.summary || game.highlightPlay) && (
+        {!game.userDidNotPlay && (game.summary || game.highlightPlay) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>HIGHLIGHTS</Text>
             <View style={styles.narrativeContainer}>
@@ -286,6 +294,29 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.medium,
     fontStyle: 'italic',
+  },
+  dnpContainer: {
+    padding: theme.spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+  },
+  dnpTitle: {
+    fontSize: theme.fontSize.xxl,
+    fontWeight: theme.fontWeight.black,
+    marginBottom: theme.spacing.sm,
+  },
+  dnpText: {
+    color: theme.colors.textPrimary,
+    fontSize: theme.fontSize.md,
+    fontWeight: theme.fontWeight.bold,
+    textAlign: 'center',
+  },
+  dnpSubText: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.fontSize.sm,
+    marginTop: theme.spacing.xs,
+    textAlign: 'center',
   },
   footer: {
     marginTop: 'auto',

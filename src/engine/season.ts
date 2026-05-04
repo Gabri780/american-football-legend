@@ -5,6 +5,7 @@ import { Game, simulateGameFromTeams } from './game';
 import { SeededRandom } from './prng';
 import { QBDriveStats, RBDriveStats, WRDriveStats } from './playerDriveStats';
 import { tickInjuries } from './injuries';
+import { PlayerSnapshot } from './types';
 
 export interface TeamStandings {
   teamId: string;
@@ -63,6 +64,8 @@ export interface SeasonResult {
   weekSummaries: WeekSummary[];      // 18 entradas
   finalStandings: TeamStandings[];   // 32 entradas
   playerSeasonStats: PlayerSeasonStats;
+  userPlayerSnapshots: PlayerSnapshot[];
+  finalUserPlayerState: PlayerSnapshot;
 }
 
 export function simulateSeason(params: {
@@ -118,11 +121,13 @@ export function simulateSeason(params: {
   };
 
   const weekSummaries: WeekSummary[] = [];
+  const userPlayerSnapshots: PlayerSnapshot[] = [];
+  const simUserPlayer = structuredClone(userPlayer);
 
   // 3. Loop semanal
   for (let w = 1; w <= 18; w++) {
     // Tick injuries at the start of the week for the user player
-    userPlayer.injuries = tickInjuries(userPlayer.injuries);
+    simUserPlayer.injuries = tickInjuries(simUserPlayer.injuries);
 
     const gamesForWeek = schedule.games.filter(g => g.week === w);
     
@@ -149,6 +154,13 @@ export function simulateSeason(params: {
 
       const subRng = rng.derive(`week-${w}-game-${i}`);
 
+      if (userPlayerTeam) {
+        userPlayerSnapshots.push({
+          injuries: structuredClone(simUserPlayer.injuries),
+          freshness: simUserPlayer.freshness
+        });
+      }
+
       const context = {
         isPlayoff: false,
         isRivalryGame,
@@ -160,7 +172,7 @@ export function simulateSeason(params: {
         homeTeam,
         awayTeam,
         context,
-        userPlayer: userPlayerTeam ? userPlayer : undefined,
+        userPlayer: userPlayerTeam ? simUserPlayer : undefined,
         userPlayerTeam,
         userPlayerScheme: 'Balanced',
         yearsPlayed,
@@ -349,6 +361,11 @@ export function simulateSeason(params: {
     schedule,
     weekSummaries,
     finalStandings,
-    playerSeasonStats
+    playerSeasonStats,
+    userPlayerSnapshots,
+    finalUserPlayerState: {
+      injuries: structuredClone(simUserPlayer.injuries),
+      freshness: simUserPlayer.freshness
+    }
   };
 }

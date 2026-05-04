@@ -331,13 +331,19 @@ export function simulateNextGame(state: CareerState): NextGameResult {
     }
 
     // 4. Actualizar state y devolver el primer game
+    const firstSnapshot = seasonResult.userPlayerSnapshots[0];
     const newState: CareerState = {
       ...state,
       phase: 'regular_season',
       currentSchedule: schedule,
       currentSeasonResult: seasonResult,
       userRegularGamesQueue,
-      currentRegularGameIndex: 0
+      currentRegularGameIndex: 0,
+      currentPlayer: {
+        ...state.currentPlayer,
+        injuries: structuredClone(firstSnapshot.injuries),
+        freshness: firstSnapshot.freshness
+      }
     };
 
     return serveRegularSeasonGame(newState);
@@ -368,11 +374,17 @@ function serveRegularSeasonGame(state: CareerState): NextGameResult {
   const isLastRegularGame = state.currentRegularGameIndex === 16;
 
   if (!isLastRegularGame) {
+    const nextSnapshot = state.currentSeasonResult!.userPlayerSnapshots[state.currentRegularGameIndex + 1];
     return {
       state: {
         ...state,
         currentRegularGameIndex: state.currentRegularGameIndex + 1,
-        gamesPlayedThisYear: state.gamesPlayedThisYear + 1
+        gamesPlayedThisYear: state.gamesPlayedThisYear + 1,
+        currentPlayer: {
+          ...state.currentPlayer,
+          injuries: structuredClone(nextSnapshot.injuries),
+          freshness: nextSnapshot.freshness
+        }
       },
       game,
       isLastGameOfRegularSeason: false,
@@ -405,26 +417,43 @@ function serveRegularSeasonGame(state: CareerState): NextGameResult {
       g.homeTeamId === state.currentTeamId || g.awayTeamId === state.currentTeamId
     );
 
+    const firstPlayoffSnapshot = playoffsResult.userPlayerSnapshots[0];
+    const newState: CareerState = {
+      ...state,
+      phase: 'playoffs',
+      inPlayoffs: true,
+      currentSeasonResult: state.currentSeasonResult,
+      currentPlayoffsResult: playoffsResult,
+      userPlayoffGamesQueue,
+      currentPlayoffGameIndex: 0,
+      currentRegularGameIndex: state.currentRegularGameIndex + 1,
+      gamesPlayedThisYear: state.gamesPlayedThisYear + 1,
+      currentPlayer: {
+        ...state.currentPlayer,
+        injuries: structuredClone(firstPlayoffSnapshot.injuries),
+        freshness: firstPlayoffSnapshot.freshness
+      }
+    };
+
     return {
-      state: {
-        ...state,
-        phase: 'playoffs',
-        inPlayoffs: true,
-        currentSeasonResult: state.currentSeasonResult,
-        currentPlayoffsResult: playoffsResult,
-        userPlayoffGamesQueue,
-        currentPlayoffGameIndex: 0,
-        currentRegularGameIndex: state.currentRegularGameIndex + 1,
-        gamesPlayedThisYear: state.gamesPlayedThisYear + 1
-      },
+      state: newState,
       game,
       isLastGameOfRegularSeason: true,
       isLastPlayoffGame: false
     };
   } else {
     // No clasificó -> Cerrar temporada y progresar antes de Offseason
+    const finalPhysical = state.currentSeasonResult.finalUserPlayerState;
+    const stateWithFinalPhysical = {
+      ...state,
+      currentPlayer: {
+        ...state.currentPlayer,
+        injuries: structuredClone(finalPhysical.injuries),
+        freshness: finalPhysical.freshness
+      }
+    };
     return {
-      state: closeSeasonAndProgress(state, game.userPlayerStats!, playoffsResult),
+      state: closeSeasonAndProgress(stateWithFinalPhysical, game.userPlayerStats!, playoffsResult),
       game,
       isLastGameOfRegularSeason: true,
       isLastPlayoffGame: false
@@ -444,10 +473,16 @@ function servePlayoffsGame(state: CareerState): NextGameResult {
   const isLastPlayoffGame = state.currentPlayoffGameIndex === (state.userPlayoffGamesQueue.length - 1);
 
   if (!isLastPlayoffGame) {
+    const nextSnapshot = state.currentPlayoffsResult!.userPlayerSnapshots[state.currentPlayoffGameIndex + 1];
     return {
       state: {
         ...state,
-        currentPlayoffGameIndex: state.currentPlayoffGameIndex + 1
+        currentPlayoffGameIndex: state.currentPlayoffGameIndex + 1,
+        currentPlayer: {
+          ...state.currentPlayer,
+          injuries: structuredClone(nextSnapshot.injuries),
+          freshness: nextSnapshot.freshness
+        }
       },
       game,
       isLastGameOfRegularSeason: false,
@@ -456,8 +491,17 @@ function servePlayoffsGame(state: CareerState): NextGameResult {
   }
 
   // Transición a Offseason -> Cerrar temporada y progresar
+  const finalPhysical = state.currentPlayoffsResult!.finalUserPlayerState;
+  const stateWithFinalPhysical = {
+    ...state,
+    currentPlayer: {
+      ...state.currentPlayer,
+      injuries: structuredClone(finalPhysical.injuries),
+      freshness: finalPhysical.freshness
+    }
+  };
   return {
-    state: closeSeasonAndProgress(state, game.userPlayerStats!, state.currentPlayoffsResult!),
+    state: closeSeasonAndProgress(stateWithFinalPhysical, game.userPlayerStats!, state.currentPlayoffsResult!),
     game,
     isLastGameOfRegularSeason: false,
     isLastPlayoffGame: true

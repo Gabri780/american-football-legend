@@ -103,6 +103,8 @@ export function HubScreen({
     }
   };
 
+  const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.container}>
@@ -125,6 +127,18 @@ export function HubScreen({
           <View style={styles.card}>
             <Text style={styles.cardLabel}>CURRENT TEAM</Text>
             <Text style={styles.cardValue}>{userTeam.city.toUpperCase()} {userTeam.name.toUpperCase()}</Text>
+          </View>
+        )}
+
+        {/* Injury Card */}
+        {currentPlayer.injuries.length > 0 && (
+          <View style={[styles.card, { borderColor: theme.colors.accentNegative }]}>
+            <Text style={[styles.cardLabel, { color: theme.colors.accentNegative }]}>INJURY REPORT</Text>
+            {currentPlayer.injuries.map((inj) => (
+              <Text key={inj.id} style={styles.cardValue}>
+                • {capitalize(inj.type)} - {capitalize(inj.severity)} (Out {inj.weeksRemaining} weeks)
+              </Text>
+            ))}
           </View>
         )}
 

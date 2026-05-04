@@ -53,6 +53,21 @@ export function CareerSummaryScreen({ careerState, onExit }: CareerSummaryScreen
             <Text style={styles.detailLabel}>Career Rush Yards</Text>
             <Text style={styles.detailValue}>{result.careerRegularStats.rushYards.toLocaleString()}</Text>
           </View>
+          {(() => {
+            const totalGamesPossible = result.yearsPlayed * 17;
+            const gamesMissed = Math.max(0, totalGamesPossible - result.careerRegularStats.gamesPlayed);
+            return (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Games Missed (Injuries)</Text>
+                <Text style={[
+                  styles.detailValue,
+                  gamesMissed === 0 ? { color: theme.colors.accentPositive } : {}
+                ]}>
+                  {gamesMissed === 0 ? '0 (perfect attendance)' : `${gamesMissed} games`}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
 
         <View style={styles.footer}>
